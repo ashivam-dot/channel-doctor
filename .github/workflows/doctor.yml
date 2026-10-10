@@ -1,0 +1,58 @@
+name: doctor (reusable)
+
+# Called by each channel repo's own .github/workflows/doctor.yml. Runs with the caller's GITHUB_TOKEN and secrets.
+on:
+  workflow_call:
+    inputs:
+      mode:
+        type: string
+        default: heal
+      run_id:
+        type: string
+        default: ""
+      dry:
+        type: boolean
+        default: false
+      report_only:
+        type: boolean
+        default: false
+
+jobs:
+  doctor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: target
+          fetch-depth: 50
+      - uses: actions/checkout@v4
+        with:
+          repository: ashivam-dot/channel-doctor
+          path: .doctor-engine
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v6
+      - name: Heal or improve
+        working-directory: .doctor-engine
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DOCTOR_GEMINI_API_KEY: ${{ secrets.DOCTOR_GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          MODE: ${{ inputs.mode }}
+          RUN_ID: ${{ inputs.run_id }}
+          DRY: ${{ inputs.dry }}
+          REPORT_ONLY: ${{ inputs.report_only }}
+        run: |
+          args=()
+          if [ "$DRY" = "true" ]; then args+=(--dry); fi
+          if [ "$REPORT_ONLY" = "true" ]; then args+=(--report-only); fi
+          if [ "$MODE" = "improve" ]; then
+            python -m doctor improve --target "$GITHUB_WORKSPACE/target" "${args[@]}"
+          else
+            case "$RUN_ID" in ''|*[!0-9]*) echo "a numeric run id is required"; exit 1;; esac
+            python -m doctor heal --run-id "$RUN_ID" --target "$GITHUB_WORKSPACE/target" "${args[@]}"
+          fi

@@ -1,0 +1,93 @@
+"""Free Gemini models, discovered at run time so model renames never break the doctor."""
+from __future__ import annotations
+
+import json
+import os
+import re
+import time
+import urllib.error
+import urllib.request
+
+BASE = "https://generativelanguage.googleapis.com/v1beta"
+NAME = re.compile(r"^models/gemini-(\d+(?:\.\d+)?)-(pro|flash|flash-lite)(-latest|-preview(?:-\d[\d-]*)?|-\d{3})?$")
+TIERS = {"deep": ["pro", "flash", "flash-lite"], "fast": ["flash", "flash-lite", "pro"]}
+
+
+def rank(names: list[str], tier: str = "deep") -> list[str]:
+    order = TIERS[tier]
+    scored = []
+    for n in names:
+        m = NAME.match(n)
+        if not m:
+            continue
+        version, kind, suffix = float(m.group(1)), m.group(2), m.group(3) or ""
+        stable = 0 if not suffix.startswith("-preview") else 1
+        scored.append((order.index(kind), stable, -version, n))
+    return [n for *_, n in sorted(scored)]
+
+
+def _json(text: str):
+    text = text.strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```\w*\n?|```$", "", text).strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        m = re.search(r"\{.*\}", text, re.S)
+        return json.loads(m.group(0)) if m else None
+
+
+class Brain:
+    def __init__(self, key: str | None = None):
+        self.key = key if key is not None else (os.environ.get("DOCTOR_GEMINI_API_KEY") or os.environ.get("GEMINI_API_KEY"))
+        self._models: list[str] | None = None
+        self.used: str | None = None
+
+    @property
+    def ready(self) -> bool:
+        return bool(self.key)
+
+    def _req(self, url: str, body=None):
+        req = urllib.request.Request(url, data=json.dumps(body).encode() if body is not None else None,
+                                     headers={"x-goog-api-key": self.key, "Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=180) as r:
+            return json.load(r)
+
+    def models(self) -> list[str]:
+        if self._models is None:
+            names, token = [], ""
+            while True:
+                res = self._req(f"{BASE}/models?pageSize=200" + (f"&pageToken={token}" if token else ""))
+                names += [m["name"] for m in res.get("models", [])
+                          if "generateContent" in m.get("supportedGenerationMethods", [])]
+                token = res.get("nextPageToken")
+                if not token:
+                    break
+            self._models = names
+        return self._models
+
+    def ask_json(self, prompt: str, tier: str = "deep", attempts: int = 4):
+        if not self.ready:
+            return None
+        try:
+            ranked = rank(self.models(), tier)
+        except Exception as exc:
+            print(f"model list failed: {type(exc).__name__}")
+            ranked = ["models/gemini-2.5-flash", "models/gemini-2.5-flash-lite"]
+        body = {"contents": [{"role": "user", "parts": [{"text": prompt}]}],
+                "generationConfig": {"responseMimeType": "application/json", "temperature": 0.2}}
+        for model in ranked[:attempts]:
+            try:
+                res = self._req(f"{BASE}/{model}:generateContent", body)
+                parts = res["candidates"][0]["content"]["parts"]
+                out = _json("".join(p.get("text", "") for p in parts if not p.get("thought")))
+                if out is not None:
+                    self.used = model.split("/")[-1]
+                    return out
+            except urllib.error.HTTPError as e:
+                print(f"{model}: HTTP {e.code}")
+                if e.code == 429:
+                    time.sleep(3)
+            except Exception as exc:
+                print(f"{model}: {type(exc).__name__}")
+        return None

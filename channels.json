@@ -1,0 +1,150 @@
+{
+  "owner": "ashivam-dot",
+  "defaults": {
+    "max_fixes_per_day": 3,
+    "max_changed_lines": 80,
+    "max_files": 4,
+    "test_timeout_s": 1500
+  },
+  "channels": {
+    "kyun-hua": {
+      "name": "Kyun Hua",
+      "youtube": "UCS-lEPHkz_dftfUjjeTuxOA",
+      "quiet_h": 18,
+      "about": "Hindi 'kyun hua' explainer Shorts about trending Indian news; timing-first (publish while a story trends); Gemini TTS Sulafat voice; real Commons photos per beat in parallax; AI-voice label.",
+      "lanes": [
+        {
+          "repo": "hindi-news-desk",
+          "mode": "fix",
+          "workflows": {
+            "run.yml": {"name": "run", "max_h": 2},
+            "health.yml": {"name": "health", "max_h": 9, "fix": false},
+            "tests.yml": {"name": "tests"},
+            "reference.yml": {"name": "reference"}
+          },
+          "redispatch": ["run.yml"],
+          "apt": ["ffmpeg"],
+          "test": "uv sync --frozen --extra dev && uv run pytest -q",
+          "editable": ["desk/**/*.py"],
+          "learnings": "state:LEARNINGS.md"
+        }
+      ]
+    },
+    "pangaea": {
+      "name": "Pangaea Nights",
+      "youtube": "UCtVG78IUTqvP9rH-LLies0A",
+      "quiet_h": 48,
+      "watch_from": "2026-10-11T12:00:00+00:00",
+      "about": "Long-form calm deep-time sleep documentaries (about 2 h), one a day, premiere 00:30 UTC; built on GitHub Actions CPU.",
+      "lanes": [
+        {
+          "repo": "pangaea-nights",
+          "mode": "fix",
+          "workflows": {
+            "episode.yml": {"name": "episode", "max_h": 30},
+            "promote.yml": {"name": "promote"},
+            "health.yml": {"name": "health", "max_h": 9, "fix": false},
+            "tests.yml": {"name": "tests"}
+          },
+          "redispatch": [],
+          "apt": ["ffmpeg"],
+          "test": "pip install -q -r requirements/base.txt -r requirements/plan.txt pytest && python -m pytest -q tests",
+          "editable": ["studio/**/*.py"],
+          "learnings": null
+        }
+      ]
+    },
+    "orbitwire": {
+      "name": "Orbitwire",
+      "youtube": "UCfqAy1IxE2Cwu9pmZGMambA",
+      "quiet_h": 72,
+      "about": "English Shorts on the world's most famous trending stories as photo stories with depth parallax and emotional narration; strict decorum, verified facts.",
+      "lanes": [
+        {
+          "repo": "rebuilt-in-3d",
+          "mode": "fix",
+          "workflows": {
+            "run.yml": {"name": "run", "max_h": 3},
+            "health.yml": {"name": "health", "max_h": 9, "fix": false}
+          },
+          "redispatch": [],
+          "apt": ["ffmpeg", "espeak-ng"],
+          "test": "uv sync --frozen --extra dev && uv run pytest -q",
+          "editable": ["studio/**/*.py"],
+          "learnings": "state:LEARNINGS.md"
+        }
+      ]
+    },
+    "atlas": {
+      "name": "Atlas in Numbers",
+      "youtube": "UC6e6OB3iw3yp8JnnBYxLItA",
+      "quiet_h": 36,
+      "about": "Data Shorts: one dataset, one surprising contrast, photoreal globe 'cinema' format; three a day; rendered on Modal, published by the history-last-hours-control publisher.",
+      "lanes": [
+        {
+          "repo": "history-last-hours-control",
+          "mode": "heal",
+          "workflows": {"atlas-publish.yml": {"name": "Atlas in Numbers publisher", "max_h": 5}}
+        },
+        {
+          "repo": "creature-receipts",
+          "mode": "heal",
+          "workflows": {
+            "watchdog.yml": {"name": "watchdog"},
+            "scout.yml": {"name": "scout"},
+            "studio.yml": {"name": "studio"}
+          }
+        }
+      ]
+    },
+    "mool-katha": {
+      "name": "Mool Katha",
+      "youtube": "UCdqxVnoHDWXgA2ZVJWkSu8w",
+      "quiet_h": 36,
+      "about": "Hindi scripture story Shorts (Mool Katha lite lane), published through Buffer to YouTube and Instagram.",
+      "lanes": [
+        {
+          "repo": "mool-katha-control",
+          "mode": "heal",
+          "workflows": {
+            "lite.yml": {"name": "Lite lane", "max_h": 15},
+            "control-monitor.yml": {"name": "Control analytics and watchdog", "max_h": 6},
+            "control-alerts.yml": {"name": "Control owner alerts", "max_h": 4}
+          }
+        }
+      ]
+    },
+    "scam-autopsy": {
+      "name": "Scam Autopsy",
+      "youtube": null,
+      "about": "Source-backed scam investigation episodes from an open-source cloud studio.",
+      "lanes": [
+        {
+          "repo": "scam-autopsy",
+          "mode": "heal",
+          "workflows": {
+            "studio.yml": {"name": "Scam Autopsy cloud studio", "max_h": 100},
+            "insights.yml": {"name": "Analytics and source research", "max_h": 30}
+          }
+        }
+      ]
+    },
+    "universe": {
+      "name": "Universe Receipts",
+      "youtube": "UCal2hAu7VaZimTwaAgeBEyg",
+      "quiet_h": 36,
+      "hands_off": true,
+      "about": "Space Shorts. Hands-off: watched read-only; written suggestions only, never changed.",
+      "lanes": []
+    }
+  },
+  "scout": [
+    {"need": "Hindi and English text-to-speech with emotion, CPU or free API", "github": "text-to-speech hindi", "hf": "text-to-speech"},
+    {"need": "Voice cloning / expressive TTS that runs on CPU", "github": "expressive tts cpu", "hf": "text-to-speech"},
+    {"need": "Monocular depth estimation for photo parallax", "github": "monocular depth estimation", "hf": "depth-estimation"},
+    {"need": "Speech recognition / forced alignment for karaoke captions", "github": "forced alignment whisper", "hf": "automatic-speech-recognition"},
+    {"need": "Royalty-free music or ambient score generation", "github": "music generation", "hf": "text-to-audio"},
+    {"need": "Small open LLMs for script writing and fact checking on CPU", "github": "llama.cpp small model", "hf": "text-generation"},
+    {"need": "Video editing and rendering automation in Python", "github": "python video editing ffmpeg", "hf": null}
+  ]
+}
