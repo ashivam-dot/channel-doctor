@@ -202,6 +202,8 @@ def test_caller_lists_watched_workflows():
     assert "ashivam-dot/channel-doctor/.github/workflows/doctor.yml@main" in text
     assert "${{ format('{0}', inputs.run_id || github.event.workflow_run.id) }}" in text
     assert "vars.DOCTOR_PAUSED != 'true'" in text
+    assert text.index("concurrency:") > text.index("  doctor:")
+    assert "group: doctor-${{ github.event.workflow_run.path || github.event_name }}" in text
     heal_only = caller("history-last-hours-control")
     assert '"Atlas in Numbers publisher"' in heal_only and "cron" not in heal_only
     assert '- cron: "23 4 * * 2,5"' in text
