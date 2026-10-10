@@ -41,6 +41,13 @@ CHANNEL.md excerpt:
 """
 
 
+MIN_SCORED = 12  # videos with 24 h+ of views before any change may be applied automatically
+
+
+def scored(vids: list[dict], at: datetime) -> int:
+    return sum(1 for v in vids if v["views"] is not None and hours(v["published"], at) >= 24)
+
+
 def uploads_table(vids: list[dict], at: datetime) -> tuple[str, str]:
     rows, views = [], []
     for v in vids[:15]:
@@ -100,14 +107,26 @@ def main(dry: bool = False):
                 print(f"{ch['name']}: feed unreadable ({type(exc).__name__})")
         table, summary = uploads_table(vids, at)
         learn, rules = learnings(gh, cfg["owner"], ch)
+        n_scored = scored(vids, at)
+        notes = []
+        if ch.get("hands_off"):
+            notes.append("This channel is hands-off: every recommendation is auto_ok=false, written advice only.")
+        if n_scored < MIN_SCORED:
+            notes.append(f"Only {n_scored} videos have 24 h of data: too little for automatic changes, so every "
+                         "recommendation is auto_ok=false, and call patterns hypotheses.")
+        if ch.get("watch_from") and at < datetime.fromisoformat(ch["watch_from"]):
+            notes.append("The channel (re)started publishing in the last day or two; YouTube's public feed lags for new "
+                         "channels, so missing uploads in the feed are not evidence of a stall.")
+        notes.append("A newer version of a video that replaced an older one (the older made private) is deliberate, not a duplicate.")
         prompt = PROMPT.format(name=ch["name"], about=ch.get("about", ""), uploads=table, summary=summary,
                                reliability=reliability(gh, cfg["owner"], ch, at), learnings=learn, rules=rules,
-                               hands_off="\nThis channel is hands-off: every recommendation is auto_ok=false, written advice only." if ch.get("hands_off") else "")
+                               hands_off="".join("\n" + n for n in notes))
         print(f"reviewing {ch['name']} ({len(vids)} uploads in feed)")
         res = brain.ask_json(prompt, "deep", models=6, rounds=2, pause=20) or {}
         print(f"  -> {'ok via ' + str(brain.used) if res else 'no answer'}")
-        if ch.get("hands_off") or not any(l.get("mode") == "fix" for l in ch.get("lanes", [])):
-            for r in res.get("recommendations", []):
+        locked = ch.get("hands_off") or n_scored < MIN_SCORED or not any(l.get("mode") == "fix" for l in ch.get("lanes", []))
+        for r in res.get("recommendations", []):
+            if locked or r.get("risk") != "low" or r.get("target") != "code":
                 r["auto_ok"] = False
         report["channels"][key] = {"name": ch["name"], "summary": summary, **res}
         md += [f"## {ch['name']}", "", f"_{summary}_", "", f"**Health:** {res.get('health', 'no answer from the model')}", ""]

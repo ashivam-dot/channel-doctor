@@ -195,6 +195,14 @@ def test_watch_flags_quiet_late_streak_and_alerts():
     assert "A [attention]" in text and "B [ok]" in text
 
 
+def test_review_counts_only_videos_with_a_day_of_data():
+    from doctor.review import scored
+    at = datetime(2026, 10, 10, 12, tzinfo=timezone.utc)
+    vids = [{"views": 5, "published": (at - timedelta(hours=h)).isoformat()} for h in (2, 23, 25, 90)]
+    vids.append({"views": None, "published": (at - timedelta(hours=50)).isoformat()})
+    assert scored(vids, at) == 2
+
+
 # ---- caller ------------------------------------------------------------------------------------------------
 def test_caller_lists_watched_workflows():
     text = caller("hindi-news-desk")
