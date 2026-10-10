@@ -16,9 +16,7 @@ on:
   workflow_run:
     workflows: {workflows}
     types: [completed]
-  schedule:
-    - cron: "{improve_cron}"
-  workflow_dispatch:
+{schedule}  workflow_dispatch:
     inputs:
       mode:
         type: choice
@@ -59,8 +57,8 @@ def caller(repo: str) -> str:
     cfg = config.load()
     _, _, lane = config.lane_for(cfg, repo)
     names = [wf["name"] for wf in lane.get("workflows", {}).values()]
-    cron = "23 4 * * 2,5" if lane.get("mode") == "fix" else "23 4 * * 2"
-    return CALLER.format(workflows=json.dumps(names), improve_cron=cron)
+    schedule = '  schedule:\n    - cron: "23 4 * * 2,5"\n' if lane.get("mode") == "fix" else ""
+    return CALLER.format(workflows=json.dumps(names), schedule=schedule)
 
 
 def selftest() -> int:

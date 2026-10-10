@@ -71,12 +71,13 @@ def test_first_error_prefers_the_real_error():
 
 
 # ---- brain -------------------------------------------------------------------------------------------------
-def test_rank_prefers_pro_then_newest_stable():
-    names = ["models/gemini-2.5-flash", "models/gemini-2.5-pro", "models/gemini-3.0-pro-preview-06",
-             "models/gemini-2.5-flash-lite", "models/gemini-embedding-001", "models/gemini-2.5-flash-preview-tts",
-             "models/gemma-3-27b-it"]
-    assert rank(names, "deep")[:2] == ["models/gemini-2.5-pro", "models/gemini-3.0-pro-preview-06"]
-    assert rank(names, "fast")[0] == "models/gemini-2.5-flash"
+def test_rank_prefers_newest_generation_with_tier_bonus():
+    names = ["models/gemini-2.5-flash", "models/gemini-2.5-pro", "models/gemini-3.1-pro-preview",
+             "models/gemini-3.8-flash", "models/gemini-2.5-flash-lite", "models/gemini-embedding-001",
+             "models/gemini-2.5-flash-preview-tts", "models/gemma-3-27b-it"]
+    assert rank(names, "deep")[:3] == ["models/gemini-3.8-flash", "models/gemini-3.1-pro-preview", "models/gemini-2.5-pro"]
+    assert rank(names, "fast")[0] == "models/gemini-3.8-flash"
+    assert rank(["models/gemini-3.8-flash", "models/gemini-3.8-pro"], "deep")[0] == "models/gemini-3.8-pro"
     assert "models/gemini-2.5-flash-preview-tts" not in rank(names)
 
 
@@ -202,4 +203,5 @@ def test_caller_lists_watched_workflows():
     assert "${{ format('{0}', inputs.run_id || github.event.workflow_run.id) }}" in text
     assert "vars.DOCTOR_PAUSED != 'true'" in text
     heal_only = caller("history-last-hours-control")
-    assert '"Atlas in Numbers publisher"' in heal_only and "23 4 * * 2\"" in heal_only
+    assert '"Atlas in Numbers publisher"' in heal_only and "cron" not in heal_only
+    assert '- cron: "23 4 * * 2,5"' in text

@@ -10,20 +10,21 @@ import urllib.request
 
 BASE = "https://generativelanguage.googleapis.com/v1beta"
 NAME = re.compile(r"^models/gemini-(\d+(?:\.\d+)?)-(pro|flash|flash-lite)(-latest|-preview(?:-\d[\d-]*)?|-\d{3})?$")
-TIERS = {"deep": ["pro", "flash", "flash-lite"], "fast": ["flash", "flash-lite", "pro"]}
+# A newer generation usually beats a bigger model of an older one, so the tier is only a bonus on the version.
+BONUS = {"deep": {"pro": 0.5, "flash": 0.0, "flash-lite": -0.6},
+         "fast": {"flash": 0.5, "flash-lite": 0.3, "pro": -0.3}}
 
 
 def rank(names: list[str], tier: str = "deep") -> list[str]:
-    order = TIERS[tier]
     scored = []
     for n in names:
         m = NAME.match(n)
         if not m:
             continue
         version, kind, suffix = float(m.group(1)), m.group(2), m.group(3) or ""
-        stable = 0 if not suffix.startswith("-preview") else 1
-        scored.append((order.index(kind), stable, -version, n))
-    return [n for *_, n in sorted(scored)]
+        preview = 0.2 if suffix.startswith("-preview") else 0.0
+        scored.append((-(version + BONUS[tier][kind] - preview), n))
+    return [n for _, n in sorted(scored)]
 
 
 def _json(text: str):
