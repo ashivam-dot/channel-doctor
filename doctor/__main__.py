@@ -66,7 +66,10 @@ def selftest() -> int:
     from .brain import Brain
     from .github import GitHub
 
-    print("telegram:", "configured" if os.environ.get("TELEGRAM_BOT_TOKEN") and os.environ.get("TELEGRAM_CHAT_ID") else "missing")
+    from . import telegram
+
+    wired = bool(os.environ.get("TELEGRAM_BOT_TOKEN") and os.environ.get("TELEGRAM_CHAT_ID"))
+    print("telegram:", "configured" if wired else "missing", "| menu:", "set" if wired and telegram.set_menu() else "not set")
     b = Brain()
     if b.ready:
         try:

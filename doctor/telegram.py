@@ -52,6 +52,18 @@ def send(text: str) -> bool:
     return ok
 
 
+MENU = [("status", "Problems now and every channel's state"), ("digest", "The daily digest, now"),
+        ("review", "Run the channel review now"), ("scout", "Run the tool scout now"), ("help", "What I can do")]
+
+
+def set_menu() -> bool:
+    try:
+        return bool(_api("setMyCommands", commands=[{"command": c, "description": d} for c, d in MENU]))
+    except Exception as exc:
+        print(f"telegram setMyCommands failed: {type(exc).__name__}")
+        return False
+
+
 def commands(offset: int) -> tuple[list[str], int]:
     """Owner's new bot commands since `offset`; returns (commands, next offset)."""
     chat = str(os.environ.get("TELEGRAM_CHAT_ID", ""))
