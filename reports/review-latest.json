@@ -1,82 +1,48 @@
 {
- "at": "2026-10-10T10:04:54+00:00",
+ "at": "2026-10-10T10:30:14+00:00",
  "channels": {
   "kyun-hua": {
    "name": "Kyun Hua",
    "summary": "4 uploads in the last 7 days (feed shows the latest 15)",
-   "health": "The channel is actively publishing timely news Shorts across eligible incident types, but 6 of 29 automation runs have failed and no videos have reached the 24-hour data baseline yet.",
-   "working": [
-    "End-to-end pipeline successfully generated and published 4 timely Shorts across disasters, obituaries, aviation, and civil movement topics.",
-    "Early traction hypothesis: global breaking topics gained immediate impressions (Eva Marie Saint obituary reached 88 views and Hurricane Isaias reached 63 views within 5 hours)."
-   ],
-   "not_working": [
-    "High automation run failure rate, with 6 out of 29 runs failing in the last 7 days (~21% failure rate).",
-    "Zero uploads have reached 24 hours of telemetry, preventing the desk ranking system from calculating verified lift factors."
-   ],
-   "recommendations": [
-    {
-     "change": "Audit scheduled automation workflow logs to diagnose and resolve root causes for pipeline execution failures.",
-     "evidence": "6 of 29 runs failed in the past 7 days, threatening timeliness on breaking trends.",
-     "target": "ops",
-     "risk": "low",
-     "auto_ok": false
-    },
-    {
-     "change": "Retain default fame and freshness desk weights without manual intervention until at least 4 videos per group cross 24 hours.",
-     "evidence": "0 videos currently have 24 h data; early view variance (88 views vs 4 views) remains strictly an unverified hypothesis.",
-     "target": "topics",
-     "risk": "low",
-     "auto_ok": false
-    },
-    {
-     "change": "Test framing breaking civic disruption titles with an explanatory 'kyun hua' hook rather than status lists.",
-     "evidence": "Delhi metro update titled as a list ('पूरी सूची') has 6 views after 3 h (hypothesis: listicle framing diverges from channel's explainer identity).",
-     "target": "titles",
-     "risk": "low",
-     "auto_ok": false
-    }
-   ]
+   "road": "11 subscribers (72.8 subscribers per 1,000 views); route shorts; 113 days to the deadline; 0.0 subscribers/day; expanded sub line unknown pace; full sub line unknown pace; exact: Shorts views 90d 0, long-form hours 365d 0.0, net subscribers 28d 0"
   },
   "pangaea": {
    "name": "Pangaea Nights",
    "summary": "0 uploads in the last 7 days (feed shows the latest 15)",
-   "health": "The channel is newly (re)started with zero visible uploads in the public feed and significant automation pipeline instability across episode, promote, and test workflows.",
+   "road": "20 subscribers (25.7 subscribers per 1,000 views); route longform; 113 days to the deadline; 0.0 subscribers/day; expanded sub line unknown pace; full sub line unknown pace; exact: Shorts views 90d 0, long-form hours 365d 0.1, net subscribers 28d 0",
+   "health": "The channel boasts strong subscriber conversion at 25.7 per 1,000 views, but publication is severely stalled by pipeline failures.",
    "working": [
-    "Health check workflow ran cleanly with 0 of 2 failures in the last 7 days",
-    "Publishing pipeline has achieved 3 successful episode generation runs despite overall reliability hurdles"
+    "Subscriber conversion rate is strong at 25.7 subscribers per 1,000 views.",
+    "Strict fact-checking gates and anti-hallucination rules ensure compliance with YouTube quality guidelines."
    ],
    "not_working": [
-    "Episode generation workflow is unreliable with 2 of 5 runs failing (40% failure rate)",
-    "Promotion workflow is unreliable with 1 of 2 runs failing (50% failure rate)",
-    "Automated test suite is unstable with 3 of 17 runs failing",
-    "Public feed reflects 0 uploads over the last 7 days"
+    "High automation failure rate, with 2 of 5 episode generation runs failing in the last 7 days.",
+    "Zero uploads published in the past 7 days, leaving watch hours stagnant at 0.1 long-form hours."
    ],
+   "ypp_lever": "Stabilize the automated publishing pipeline to reliably upload daily 2-hour sleep documentaries, driving long-form watch time toward the 3,000 hour Expanded YPP finish line.",
+   "inauthentic_risk": {
+    "level": "low",
+    "why": "Strict Wikipedia fact-checking, distinct scripts, unique music keys, and full synthetic media disclosures protect against generic or repetitive content flags."
+   },
    "recommendations": [
     {
-     "change": "Inspect GitHub Actions logs to diagnose and resolve failure causes in the episode generation pipeline",
-     "evidence": "2 of 5 episode generation workflow runs failed in the last 7 days on GitHub Actions CPU",
-     "target": "ops",
-     "risk": "medium",
-     "auto_ok": false
-    },
-    {
-     "change": "Verify whether completed episode runs successfully uploaded to YouTube or stalled prior to the 00:30 UTC premiere window",
-     "evidence": "0 uploads appear in the public feed despite 3 successful episode workflow runs, which could indicate public feed lag or unpublished artifacts (hypothesis)",
+     "change": "Resolve GitHub Actions resource constraints to prevent episode pipeline failures.",
+     "evidence": "2 of 5 episode generation runs failed in the last 7 days, preventing new daily uploads.",
      "target": "ops",
      "risk": "low",
      "auto_ok": false
     },
     {
-     "change": "Debug and repair the vertical trailer promotion workflow to ensure consistent post-publish reach",
-     "evidence": "1 of 2 promote workflow runs failed in the last 7 days",
+     "change": "Fix promotion workflow execution failures to ensure Shorts trailers post consistently.",
+     "evidence": "1 of 2 promote pipeline runs failed in the last 7 days.",
      "target": "ops",
      "risk": "low",
      "auto_ok": false
     },
     {
-     "change": "Resolve flaky or broken test assertions across continuous integration runs",
-     "evidence": "3 of 17 test workflow runs failed in the last 7 days",
-     "target": "ops",
+     "change": "Create themed playlists (e.g., Deep Ocean Sleep, Ancient Earth) to increase session length and watch hours.",
+     "evidence": "Channel has accumulated only 0.1 watch hours with 113 days left before YPP threshold increases.",
+     "target": "format",
      "risk": "low",
      "auto_ok": false
     }
@@ -85,42 +51,48 @@
   "orbitwire": {
    "name": "Orbitwire",
    "summary": "7 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 1005 views, best 1606, worst 404",
-   "health": "Orbitwire is running with solid automation uptime, but recent performance is weighed down by an over-saturated multi-part protest series that violated the desk's story frequency rules.",
+   "road": "7 subscribers (conversion unknown); route shorts; 113 days to the deadline; 0.0 subscribers/day; expanded sub line unknown pace; full sub line unknown pace; exact: Shorts views 90d 0, long-form hours 365d 0.0, net subscribers 28d 0",
+   "health": "Orbitwire is showing initial traction on major disaster and obituary topics with peaks above 1,300 views, but subscriber conversion is entirely flat at 7 subscribers.",
    "working": [
-    "High-magnitude natural disaster and notable death topics are gaining strong early traction (1,388 views in 12 h for the Panama quake; 1,606 views in 25 h for Nana Patekar).",
-    "Automation infrastructure remains dependable, executing 42 of 44 scheduled runs and passing all 6 health checks over the past 7 days."
+    "Hypothesis: High-impact breaking natural disasters and prominent obituaries attract algorithmic reach (Panama quake reached 1,388 views in 12h; Nana Patekar reached 1,606 views in 25h).",
+    "Automation reliability is sound with 43 of 45 pipeline runs succeeding over the last 7 days."
    ],
    "not_working": [
-    "Rapidly publishing 4 videos on the same CJP protest in under 18 hours violated the channel rule limiting stories to 2–3 parts and enforcing a 6-day cooldown on ongoing stories.",
-    "Protest series videos exhibit weak viewer interest and steep decay (Part 1 at 96 views after 18 h, Part 3 at 52 views after 4 h)."
+    "Hypothesis: Episodic multi-part series fail in the non-linear Shorts feed (Part 1, 2, and 3 averaged under 120 views).",
+    "Subscriber conversion is stalled at zero net gain over 28 days despite multiple videos breaking 1,000 views."
    ],
+   "ypp_lever": "Add an explicit on-screen and spoken subscriber call-to-action in the final five seconds, because converting 1,000+ view spikes into subscribers is the strict gating factor for the 500-subscriber expanded YPP threshold.",
+   "inauthentic_risk": {
+    "level": "medium",
+    "why": "Using derogatory or satirical political party naming ('Cockroach Janta Party') and multi-part template scripts risks YPP rejection for partisan shock-bait or repetitive automated news; titling and narrative must remain strictly factual, neutral, and verified."
+   },
    "recommendations": [
     {
-     "change": "Enforce strict deduplication and series caps in studio/plan.py to block more than 3 parts and respect the 6-day cooldown on ongoing stories.",
-     "evidence": "4 videos on the CJP protest were published within 18 hours (Part 1, advisory, Part 2, Part 3), generating only 52 to 283 views each and breaching channel guidelines.",
-     "target": "code",
-     "risk": "medium",
-     "auto_ok": false
-    },
-    {
-     "change": "Deprioritize domestic protest series in topic selection in favor of high-impact global breaking events and notable deaths (hypothesis).",
-     "evidence": "The M7.7 Panama quake reached 1,388 views in 12 h and the Nana Patekar tribute reached 1,606 views in 25 h, while 4 protest uploads averaged 153 views; requires 4 scored videos per group to confirm.",
-     "target": "topics",
+     "change": "Insert a standardized closing subscribe prompt ('Follow Orbitwire for verified world events') and pin a subscription prompt comment on upload.",
+     "evidence": "Channel has 0 net subscribers in 28 days and remains at 7 total despite multiple Shorts exceeding 1,300 views.",
+     "target": "format",
      "risk": "low",
      "auto_ok": false
     },
     {
-     "change": "Refactor series title formatting to front-load the dramatic hook instead of starting with 'Part N:' (hypothesis).",
-     "evidence": "'Part 1' achieved only 96 views in 18 h and 'Part 3' logged 52 views in 4 h, suggesting generic episode prefixes may deter casual feed viewers.",
+     "change": "Eliminate episodic serial prefixes ('Part 1:', 'Part 2:') and ensure every Short functions as an independent standalone story.",
+     "evidence": "Episodic titles received 53, 96, and 182 views, whereas standalone quake and obituary titles achieved 1,388 and 1,606 views.",
      "target": "titles",
      "risk": "low",
      "auto_ok": false
     },
     {
-     "change": "Inspect logs for the 2 failed automation runs out of 44 to identify and resolve transient execution errors.",
-     "evidence": "Automation run metrics report 2 failed executions out of 44 runs over the last 7 days.",
-     "target": "ops",
-     "risk": "low",
+     "change": "Increase editorial weight for significant seismic events and high-prominence deaths while cooling down local protest sub-threads.",
+     "evidence": "Quakes and death topics generated median views above 1,300 within 24h, while protest coverage peaked at only 283 views.",
+     "target": "topics",
+     "risk": "medium",
+     "auto_ok": false
+    },
+    {
+     "change": "Add an automated headline toxicity filter in studio/plan.py to sanitize colloquial or derogatory party slurs before title generation.",
+     "evidence": "Title 'Part 1: The Rise of the Cockroach Janta Party' triggers reviewer scrutiny for bias and policy violations under inauthentic content rules.",
+     "target": "code",
+     "risk": "medium",
      "auto_ok": false
     }
    ]
@@ -128,34 +100,48 @@
   "atlas": {
    "name": "Atlas in Numbers",
    "summary": "4 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 127 views, best 1309, worst 10",
-   "health": "Pipeline execution is technically stable, but the publishing schedule is falling far short of its three-per-day target with only 4 videos uploaded in 7 days.",
+   "road": "2 subscribers (1.4 subscribers per 1,000 views); route shorts; 113 days to the deadline; expanded sub line unknown pace; full sub line unknown pace; Shorts-views and watch-hour totals unavailable (public numbers only)",
+   "health": "Early launch phase with high pipeline reliability but severe view drop-off after an initial breakout video.",
    "working": [
-    "Hypothesis: Specific, counterintuitive consumer/infrastructure contrasts draw stronger interest ('137 Places Have More Mobile Subscriptions Than People' hit 1,309 views).",
-    "Pipeline reliability is solid with 0 publisher failures across 33 runs and 1 studio failure across 44 runs."
+    "Tech and infrastructure pipeline is reliable with zero publisher/watchdog failures across 70+ runs.",
+    "First uploaded video achieved 1,309 views, demonstrating that the photoreal globe format can attract algorithmic distribution."
    ],
    "not_working": [
-    "Publishing cadence is drastically under target, achieving only 4 uploads across 7 days instead of the scheduled 21.",
-    "Hypothesis: Standard demographic statistics generate weaker engagement ('47 places Where Life Expectancy Reaches 80' has only 10 views after 35 h; 'Below the fertility benchmark in 2024' has 127 views after 38 h)."
+    "Subsequent uploads collapsed from 1,309 views down to 127, 10, and 4 views.",
+    "Subscriber conversion is low at 1.4 subscribers per 1,000 views (only 2 subscribers total)."
    ],
+   "ypp_lever": "Add an explicit curiosity-driven hook and subscribe prompt in the audio/visual overlay to raise subscriber conversion from 1.4 per 1k views toward 3+ per 1k views.",
+   "inauthentic_risk": {
+    "level": "medium",
+    "why": "Repetitive photoreal globe rotations with uniform data callouts risk being flagged as generic/templated automated content; needs distinct narrative commentary, voiceover differentiation, and varied visual pacing to prove original value.",
+    "fix": "Ensure each Short has a unique voiceover script offering context/surprise rather than static stat narration, and vary visual angles or color maps."
+   },
    "recommendations": [
     {
-     "change": "Audit scheduler and queue triggers to restore intended three-per-day upload frequency",
-     "evidence": "Channel posted only 4 videos in the last 7 days despite a target of three per day",
-     "target": "ops",
+     "change": "Incorporate a strong visual hook in the first 2 seconds highlighting a bizarre counter-intuitive stat rather than a dry list title.",
+     "evidence": "Hypothesis based on 3 matured videos: '137 Places Have More Mobile Subscriptions Than People' reached 1,309 views, whereas dry demographic topics dropped to 10-127 views.",
+     "target": "titles",
      "risk": "low",
      "auto_ok": false
     },
     {
-     "change": "Test topic weighting toward surprising technology and consumption anomalies rather than baseline demographic data",
-     "evidence": "1,309 views for mobile subscriptions contrast versus 10 views for life expectancy and 127 for fertility benchmark",
+     "change": "Embed a visual or spoken on-brand call-to-subscribe in the final 3 seconds of each Short.",
+     "evidence": "Channel has generated ~1,450 total views across 4 uploads but secured only 2 subscribers (1.4 per 1,000 views), which is too slow for the 500/1,000 subscriber milestone.",
+     "target": "format",
+     "risk": "low",
+     "auto_ok": false
+    },
+    {
+     "change": "Prioritize consumer tech, wealth, and lifestyle contrasts over demographic census data.",
+     "evidence": "Hypothesis: Mobile phone penetration gained 1,309 views versus 127 for fertility benchmarks and 10 for life expectancy.",
      "target": "topics",
      "risk": "low",
      "auto_ok": false
     },
     {
-     "change": "Format title templates to highlight direct entity-to-entity contrasts instead of descriptive metric status",
-     "evidence": "'137 Places Have More Mobile Subscriptions Than People' (1,309 views) outperformed 'Below the fertility benchmark in 2024' (127 views)",
-     "target": "titles",
+     "change": "Maintain consistent three-a-day publishing cadence while gathering at least 20 videos with 24h data before altering rendering parameters.",
+     "evidence": "Only 3 videos currently exceed 24 hours of data, which is insufficient sample size to definitively evaluate retention mechanics.",
+     "target": "ops",
      "risk": "low",
      "auto_ok": false
     }
@@ -164,118 +150,88 @@
   "mool-katha": {
    "name": "Mool Katha",
    "summary": "8 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 8 views, best 38, worst 5",
-   "health": "The channel experiences very low baseline visibility alongside significant automation instability, with critical failure rates in background analytics and the publishing lane.",
-   "working": [
-    "Alert delivery automation is fully reliable with 0 of 100 runs failed.",
-    "Specific mythological curiosity hooks (Samudra Manthan apsaras at 38 views, Shiva Dhanush at 28 views) outperform standard plot points."
-   ],
-   "not_working": [
-    "Control analytics and watchdog automation is failing at an unsustainable rate (34 of 56 runs failed).",
-    "Lite lane pipeline has a 25% failure rate (8 of 32 runs failed).",
-    "Early distribution is stagnant, with recent uploads at 18 h and 22 h sitting at only 1 view."
-   ],
-   "recommendations": [
-    {
-     "change": "Debug and fix error handling in control analytics and watchdog services to restore monitoring reliability.",
-     "evidence": "34 of 56 runs failed in the last 7 days.",
-     "target": "ops",
-     "risk": "medium",
-     "auto_ok": false
-    },
-    {
-     "change": "Inspect Lite lane execution logs to identify and resolve root causes of publishing and generation drops.",
-     "evidence": "8 of 32 Lite lane runs failed in the last 7 days.",
-     "target": "ops",
-     "risk": "low",
-     "auto_ok": false
-    },
-    {
-     "change": "Hypothesis: Weight topic generation toward intriguing, lesser-known scripture trivia questions rather than routine plot queries.",
-     "evidence": "Top 2 videos (38 and 28 views) featured obscure trivia hooks, while other 4 mature videos had 5 to 8 views (sample size too small for proven pattern).",
-     "target": "topics",
-     "risk": "low",
-     "auto_ok": false
-    },
-    {
-     "change": "Hypothesis: Increase the spacing between consecutive uploads to at least 12-24 hours rather than publishing within a 4-hour window.",
-     "evidence": "Uploads published close together at 18 h and 22 h both stalled at 1 view.",
-     "target": "timing",
-     "risk": "low",
-     "auto_ok": false
-    }
-   ]
+   "road": "1 subscribers (9.9 subscribers per 1,000 views); route shorts; 113 days to the deadline; expanded sub line unknown pace; full sub line unknown pace; Shorts-views and watch-hour totals unavailable (public numbers only)"
   },
   "scam-autopsy": {
    "name": "Scam Autopsy",
-   "summary": "0 uploads in the last 7 days (feed shows the latest 15)",
-   "health": "The channel pipeline is completely stalled with zero uploads over the last 7 days due to severe automation and research runner failures.",
-   "working": [
-    "Scam Autopsy cloud studio successfully completed 3 out of 5 runs (60% success rate)"
-   ],
-   "not_working": [
-    "Zero uploads published in the past 7 days",
-    "Analytics and source research pipeline failed 13 out of 18 runs (72.2% failure rate)",
-    "Cloud studio generation failed 2 out of 5 runs (40% failure rate)"
-   ],
-   "recommendations": [
-    {
-     "change": "Audit error logs and resolve failure points in the analytics and source research automation service",
-     "evidence": "13 of 18 runs failed over the last 7 days, starving the pipeline of source material",
-     "target": "ops",
-     "risk": "medium",
-     "auto_ok": false
-    },
-    {
-     "change": "Inspect cloud studio render runner environments to diagnose and fix task crashes",
-     "evidence": "2 of 5 cloud studio runs failed, preventing completed video generation",
-     "target": "ops",
-     "risk": "medium",
-     "auto_ok": false
-    },
-    {
-     "change": "Add automated retry mechanisms and failure alerts to notify the operator when scheduled runs fail",
-     "evidence": "15 total failed jobs accumulated across 23 runs without producing any publishable output",
-     "target": "code",
-     "risk": "low",
-     "auto_ok": false
-    }
-   ]
+   "summary": "upload numbers unknown: no public feed is configured for this channel",
+   "road": "no numbers yet"
   },
   "universe": {
    "name": "Universe Receipts",
-   "summary": "15 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 902 views, best 1370, worst 104",
-   "health": "The channel maintains steady output with a solid median of 902 views on mature uploads, but performance fluctuates widely between 104 and 1,370 views depending on topic accessibility.",
+   "summary": "15 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 902 views, best 1376, worst 104",
+   "road": "43 subscribers (2.6 subscribers per 1,000 views); route shorts; 113 days to the deadline; expanded sub line unknown pace; full sub line unknown pace; Shorts-views and watch-hour totals unavailable (public numbers only)",
+   "health": "The channel maintains a healthy posting cadence with solid view counts (median 902 views), but subscriber conversion (2.6 per 1,000 views) is the primary bottleneck to YPP.",
    "working": [
-    "Near-Earth and human spaceflight subjects consistently clear 1,000 views (e.g., 'The Myth of the Moon's Dark Side' at 1,370 views, 'The Asteroid Passing Closer Than Our Satellites' at 1,327 views, 'The Spacecraft That Launched First' at 1,266 views).",
-    "Tangible comparative hooks drive strong traction ('A Teaspoon Weighs One Billion Tons' achieved 1,090 views)."
+    "High-concept scale, myth-busting, and bizarre historical space facts consistently perform above median (e.g., Moon's Dark Side at 1,376 views, Teaspoon Weighs One Billion Tons at 1,090 views).",
+    "Consistent publishing schedule delivering 15 uploads in 7 days, maintaining initial algorithmic feed testing."
    ],
    "not_working": [
-    "Niche deep-sky astronomical objects severely underperform channel benchmarks ('The Dark Secret of the Sombrero Galaxy' at 242 views, 'The Quasar in Your Backyard Telescope' at 104 views).",
-    "Clustered scheduling publishes video pairs approximately 2 hours apart (e.g., 9h/11h, 33h/35h, 57h/59h, 105h/107h, 129h/131h), causing uneven reach within pairs."
+    "Niche or abstract astronomical topics fail to capture interest (e.g., Quasar in Backyard Telescope at 104 views, Sombrero Galaxy at 242 views).",
+    "Subscriber conversion rate of 2.6 per 1,000 views is too slow to reach the 500-subscriber threshold before the deadline."
    ],
+   "ypp_lever": "Implement a recognizable series identity with a dedicated verbal and visual subscribe call-to-action in the final 3 seconds to lift subscriber conversion above 5.0 per 1,000 views.",
+   "inauthentic_risk": {
+    "level": "medium",
+    "why": "Faceless automated space Shorts risk being flagged as repetitive or generic template content if using stock video with generic TTS narration; ensure scripts feature unique research angles, varied pacing, and branded visual editing."
+   },
    "recommendations": [
     {
-     "change": "Space daily uploads by at least 8 to 12 hours rather than releasing videos in 2-hour batches.",
-     "evidence": "5 out of 7 upload cycles feature videos published exactly 2 hours apart, with sharp intra-pair drops such as 33h (422 views) versus 35h (1,370 views).",
-     "target": "timing",
+     "change": "Add an explicit, narrative-driven call-to-subscribe in the audio hook and a pinned comment on every new Short.",
+     "evidence": "Channel has 43 subscribers with a 2.6/1k view conversion rate; subscriber count is the primary binding constraint for Expanded YPP.",
+     "target": "format",
      "risk": "low",
      "auto_ok": false
     },
     {
-     "change": "Shift topic weighting toward relatable Solar System and human space history trivia instead of obscure deep-sky objects.",
-     "evidence": "Hypothesis: Earth/Moon and historical space race topics account for 5 of the top 6 mature videos (all >1,000 views), while distant astrophysics titles generated the channel's 2 lowest counts (Sombrero Galaxy at 242, Backyard Quasar at 104).",
+     "change": "Prioritize topics focused on counter-intuitive facts, extreme physics scale, and space-race history over general observational astronomy.",
+     "evidence": "6 videos on scale/history/myths surpassed 1,000 views (e.g., Asteroid Passing Closer at 1,327, Soviet Moon Photos at 1,063), while technical object topics fell below 300 views (Quasar at 104, Sombrero Galaxy at 242).",
      "target": "topics",
-     "risk": "medium",
+     "risk": "low",
      "auto_ok": false
     },
     {
-     "change": "Vary title phrasing by testing direct scale comparisons and numbers alongside the standard 'The [Noun]' phrasing.",
-     "evidence": "12 of 15 titles start with 'The [Noun]'; the highest non-formulaic title ('A Teaspoon Weighs One Billion Tons') outperformed the mature median by 21% with 1,090 views.",
+     "change": "Format video titles around strong mystery or myth-busting hooks rather than plain descriptive labels.",
+     "evidence": "Hook-driven titles like 'The Myth of the Moon's Dark Side' (1,376 views) and 'The Unseen Force Dragging the Milky Way' (1,041 views) outperform passive titles.",
      "target": "titles",
      "risk": "low",
      "auto_ok": false
     }
    ]
   }
+ },
+ "focus": {
+  "summary": "Universe Receipts is numerically closest to the expanded YPP milestone with 43 subscribers and steady ~900-view Shorts traffic, but weak subscriber conversion (2.6 per 1,000 views) stands in the way. Close behind, Pangaea Nights holds the most viable route to monetization via long-form watch hours, but is completely halted by pipeline upload failures.",
+  "focus": [
+   {
+    "channel": "Universe Receipts",
+    "why": "Leads all channels with 43 subscribers and reliable traffic (15 uploads in 7 days, median 902 views), but conversion is underperforming at 2.6 subscribers per 1,000 views.",
+    "next_step": "Provide written recommendations to implement a recognizable series hook and a direct 3-second audio/visual subscribe call-to-action before the loop."
+   },
+   {
+    "channel": "Pangaea Nights",
+    "why": "Long-form watch hours (3,000 h threshold) offer the only realistic finish-line route within 113 days, supported by excellent conversion (25.7 per 1,000 views), but 0 uploads occurred this week due to pipeline breakdown.",
+    "next_step": "Fix and stabilize the automated video generation and publishing pipeline to resume daily 2-hour sleep documentary uploads immediately."
+   },
+   {
+    "channel": "Orbitwire",
+    "why": "Showing strong organic reach with median 1,005 views and peaks above 1,600, but has stalled at 7 subscribers and carries active YPP rejection risk from derogatory political labels ('Cockroach Janta Party').",
+    "next_step": "Sanitize scripts to strictly neutral, factual reporting to eliminate inauthentic/shock-bait policy risk, and append an explicit visual and spoken subscriber CTA in the final five seconds."
+   }
+  ],
+  "deprioritise": [
+   {
+    "channel": "Atlas in Numbers",
+    "why": "Low median views (127) and weak conversion (1.4 per 1,000 views) paired with repetitive template risks mean it cannot reach YPP before the 113-day deadline without extensive restructuring."
+   },
+   {
+    "channel": "Mool Katha",
+    "why": "Severely flat traction with a median of 8 views across 8 uploads and only 1 subscriber, yielding zero momentum toward YPP milestones."
+   },
+   {
+    "channel": "Scam Autopsy",
+    "why": "No public feed or baseline data exists, making allocation of diagnostic effort ineffective compared to active channels."
+   }
+  ]
  }
 }
