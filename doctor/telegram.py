@@ -53,7 +53,7 @@ def send(text: str) -> bool:
 
 
 MENU = [("status", "Problems now and every channel's state"), ("digest", "The daily digest, now"),
-        ("review", "Run the channel review now"), ("scout", "Run the tool scout now"), ("help", "What I can do")]
+        ("ypp", "Road to YPP: every channel's progress to earning"), ("review", "Run the channel review now"), ("scout", "Run the tool scout now"), ("help", "What I can do")]
 
 
 def set_menu() -> bool:

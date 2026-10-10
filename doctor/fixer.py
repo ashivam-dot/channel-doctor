@@ -70,6 +70,8 @@ def context(root: Path, lane: dict, log: str, workflow_file: str | None, budget:
 
 PROMPT = """You are the on-call engineer for an automated YouTube channel pipeline that runs on GitHub Actions.
 A workflow run failed. Decide whether a small, safe code change fixes the cause, and if so write it.
+The channel's goal is to reach the YouTube Partner Program soon: every missed publish is lost reach, and every
+quality, originality or policy check exists to keep the channel monetisable, so never trade one for the other.
 
 Rules:
 - Only edit files listed as EDITABLE; the editable globs are {editable}. Never edit workflows, tests, docs, lock files or secrets.

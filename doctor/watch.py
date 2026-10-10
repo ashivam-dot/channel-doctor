@@ -7,7 +7,7 @@ import urllib.error
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 
-from . import config, telegram
+from . import config, growth, telegram
 from .github import GitHub
 from .state import IssueState, iso, now, since
 
@@ -108,9 +108,19 @@ def check(gh: GitHub, cfg: dict, at: datetime) -> tuple[dict[str, str], dict[str
     return problems, status
 
 
-def digest(status: dict[str, list[str]], problems: dict[str, str], at: datetime) -> str:
+def road_text(road: dict) -> str:
+    if not road.get("lines"):
+        return "Road to YPP: no numbers yet."
+    days = (growth.DEADLINE - datetime.fromisoformat(road["day"]).date()).days
+    return (f"Road to YPP ({road['day']}; {days} days left before the 1 Feb 2027 rules double the bar)\n" +
+            "\n".join(f"- {l}" for l in road["lines"]))
+
+
+def digest(status: dict[str, list[str]], problems: dict[str, str], at: datetime, road: dict | None = None) -> str:
     head = f"Channel Doctor daily digest, {at.astimezone(timezone.utc):%d %b %H:%M} UTC"
     body = [head, ""]
+    if road:
+        body += [road_text(road), ""]
     for name, lines in status.items():
         flag = "attention" if any(p.startswith(name + ":") for p in problems.values()) else "ok"
         body.append(f"{name} [{flag}]")
@@ -121,7 +131,15 @@ def digest(status: dict[str, list[str]], problems: dict[str, str], at: datetime)
 
 
 HELP = ("Channel Doctor commands:\n/status - current problems and every channel's state\n/digest - same as the daily digest\n"
+        "/ypp - fresh Road to YPP numbers for every channel\n"
         "/review - run the channel review now\n/scout - run the tool scout now\n/help - this list")
+
+
+def refresh_road(gh: GitHub, cfg: dict, data: dict, at: datetime) -> list[str]:
+    lines, info, news = growth.snapshot(gh, cfg, data, at)
+    data["road"] = {"day": f"{at:%Y-%m-%d}", "at": iso(at), "lines": lines, "info": info}
+    print(road_text(data["road"]))
+    return news
 
 
 def main(dry: bool = False):
@@ -157,10 +175,23 @@ def main(dry: bool = False):
     if parts and not dry:
         telegram.send("\n\n".join(parts))
 
+    today = f"{at:%Y-%m-%d}"
+    due = at.hour + at.minute / 60 >= DIGEST_UTC_HOUR and st.data.get("digest") != today
     cmds, st.data["tg_offset"] = telegram.commands(int(st.data.get("tg_offset", 0)))
-    for c in dict.fromkeys(cmds):
+    cmds = list(dict.fromkeys(cmds))
+    if due or "/ypp" in cmds or (st.data.get("road") or {}).get("day") is None:
+        try:
+            news = refresh_road(gh, cfg, st.data, at)
+            if news and not dry:
+                telegram.send("MILESTONE\n" + "\n".join(f"- {n}" for n in news))
+        except Exception as exc:
+            print(f"road to YPP failed: {type(exc).__name__}: {exc}")
+    road = st.data.get("road")
+    for c in cmds:
         if c in ("/status", "/digest", "/start"):
-            telegram.send(digest(status, problems, at))
+            telegram.send(digest(status, problems, at, road))
+        elif c == "/ypp":
+            telegram.send(road_text(road or {}))
         elif c in ("/review", "/scout"):
             try:
                 if not dry:
@@ -171,10 +202,9 @@ def main(dry: bool = False):
         else:
             telegram.send(HELP)
 
-    today = f"{at:%Y-%m-%d}"
-    if at.hour + at.minute / 60 >= DIGEST_UTC_HOUR and st.data.get("digest") != today:
+    if due:
         st.data["digest"] = today
         if not dry:
-            telegram.send(digest(status, problems, at))
+            telegram.send(digest(status, problems, at, road))
     st.data["checked"] = iso(at)
     st.save()

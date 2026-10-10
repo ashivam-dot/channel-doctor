@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from doctor import config, fixer, playbook, telegram, watch
+from doctor import config, fixer, growth, playbook, telegram, watch
 from doctor.__main__ import caller
 from doctor.brain import _json, rank
 from doctor.redact import redact
@@ -211,7 +211,56 @@ def test_caller_lists_watched_workflows():
     assert "${{ format('{0}', inputs.run_id || github.event.workflow_run.id) }}" in text
     assert "vars.DOCTOR_PAUSED != 'true'" in text
     assert text.index("concurrency:") > text.index("  doctor:")
-    assert "group: doctor-${{ github.event.workflow_run.path || github.event_name }}" in text
+    assert "group: doctor-${{ github.event.workflow_run.path || github.event.schedule || github.event_name }}" in text
     heal_only = caller("history-last-hours-control")
     assert '"Atlas in Numbers publisher"' in heal_only and "cron" not in heal_only
-    assert '- cron: "23 4 * * 2,5"' in text
+    assert '- cron: "23 4 * * 2,5"' in text and '- cron: "41 14 * * *"' in text
+    assert "github.event.schedule == '41 14 * * *' && 'growth' || 'improve'" in text
+    assert "options: [heal, improve, growth]" in text
+    assert '"41 14' not in caller("doctor-drill")
+
+
+# ---- growth -------------------------------------------------------------------------------------------------
+@pytest.mark.parametrize("text,n", [("43", 43), ("1.2K", 1200), ("12,345", 12345), ("3M", 3_000_000), ("", None), ("x", None)])
+def test_count(text, n):
+    assert growth.count(text) == n
+
+
+def test_listed_reads_ids_and_views():
+    html = ('{"entityId":"shorts-shelf-item-x","videoId": "abcdefghijk", "accessibilityText": "Volcano, 1.2K views - play Short"}'
+            '{"contentId": "ABCDEFGHIJK", "content": "659 views"}')
+    assert growth.listed(html) == {"abcdefghijk": 1200, "ABCDEFGHIJK": 659}
+
+
+def test_rate_and_eta():
+    hist = [["2026-10-01", 10, None, None], ["2026-10-06", 20, None, None], ["2026-10-11", 40, None, None]]
+    assert growth.rate(hist, 1) == pytest.approx(3.0)
+    assert growth.rate(hist[:1], 1) is None
+    assert growth.eta_days(40, 500, 3.0) == pytest.approx(460 / 3)
+    assert growth.eta_days(600, 500, None) == 0 and growth.eta_days(40, 500, 0) is None
+
+
+def test_road_line_and_merge():
+    at = datetime(2026, 10, 11, tzinfo=timezone.utc)
+    fresh = {"subs": 120, "shorts_views_90d": 50_000, "long_hours_365d": 2.5, "subs_net_28d": 56, "at": at.isoformat()}
+    m = growth.merged({"subs": 118, "shorts_views_listed": 9000}, fresh, at)
+    assert m["subs"] == 120 and m["exact"] is True
+    stale = dict(fresh, at=(at - timedelta(days=3)).isoformat())
+    assert growth.merged({"subs": 118, "shorts_views_listed": 9000}, stale, at)["exact"] is False
+    line, info = growth.road("Kyun Hua", m, [], at.date(), "shorts")
+    assert "120 subs" in line and "Shorts views 90d 50,000" in line and info["subs_per_day"] == pytest.approx(2.0)
+    assert info["expanded_sub_eta_days"] == pytest.approx(190) and info["days_to_deadline"] == 112
+    assert "no subscriber number" in growth.road("X", {"subs": None}, [], at.date(), "shorts")[0]
+
+
+def test_review_road_line_conversion():
+    from doctor.review import road_line
+    info = {"subs": 43, "route": "shorts", "days_to_deadline": 112, "subs_per_day": None, "exact": False,
+            "public": {"shorts_views_listed": 16496, "long_views_listed": 0}}
+    assert "2.6 subscribers per 1,000 views" in road_line(info)
+    assert road_line({}) == "no numbers yet"
+
+
+def test_mission_loaded():
+    from doctor import mission
+    assert "31 January 2027" in mission.brief() and "inauthentic" in mission.brief()

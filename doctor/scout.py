@@ -7,7 +7,7 @@ import os
 import urllib.parse
 from datetime import timedelta
 
-from . import config, telegram
+from . import config, mission, telegram
 from .brain import Brain
 from .github import GitHub
 from .state import IssueState, iso, now, since
@@ -56,14 +56,18 @@ def hf_candidates(gh: GitHub, pipeline: str) -> list[dict]:
     return out
 
 
-PROMPT = """You scout free tools for a set of automated YouTube studios that run on GitHub Actions CPU runners
+PROMPT = """{mission}
+
+You scout free tools for a set of automated YouTube studios that run on GitHub Actions CPU runners
 (4 vCPU, 16 GB RAM, no GPU), Modal free credits, and a Mac. Current stack and needs:
 {stack}
 
 Candidates found this week (licence already filtered to ones safe for monetised use):
 {cands}
 
-Pick at most 6 that are realistically worth a test because they could beat what a channel uses now. Prefer active,
+Pick at most 6 that are realistically worth a test because they could beat what a channel uses now, ranked by how
+much they would move a channel towards YPP (more original, varied, watchable videos; better subscriber conversion;
+more reliable publishing). Prefer active,
 well-documented projects that run on CPU or a free API. Skip anything needing paid APIs, a GPU at inference, or with
 unclear provenance. Return JSON only:
 {{"picks": [{{"name": "...", "url": "...", "for": "which channel and which step", "why": "what it could improve",
@@ -89,7 +93,7 @@ def main(dry: bool = False):
               f"is fine): {cfg.get('in_use', '')}")
     listing = "\n".join(f"- {c['name']} ({c['url']}) | {c['license']} | {c['stars']} stars/likes | updated {c['updated']} | "
                         f"{c['need']} | {c['about']}" for c in list(cands.values())[:80])
-    res = brain.ask_json(PROMPT.format(stack=stack, cands=listing or "(none)"), "deep") if cands else {}
+    res = brain.ask_json(PROMPT.format(mission=mission.brief(3500), stack=stack, cands=listing or "(none)"), "deep") if cands else {}
     picks = (res or {}).get("picks", [])
     md = [f"# Tool scout {at:%Y-%m-%d}", "", f"{len(cands)} licence-safe candidates checked; model: {brain.used or 'none'}.", ""]
     for p in picks:

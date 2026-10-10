@@ -18,7 +18,33 @@ on:
         default: false
 
 jobs:
+  growth:
+    if: inputs.mode == 'growth'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: youtube
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ashivam-dot/channel-doctor
+          path: .doctor-engine
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Read this channel's YouTube Analytics
+        working-directory: .doctor-engine
+        env:
+          GH_TOKEN: ${{ github.token }}
+          YOUTUBE_OAUTH_JSON: ${{ secrets.YOUTUBE_OAUTH_JSON }}
+          DRY: ${{ inputs.dry }}
+        run: |
+          args=()
+          if [ "$DRY" = "true" ]; then args+=(--dry); fi
+          python -m doctor growth "${args[@]}"
+
   doctor:
+    if: inputs.mode != 'growth'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:

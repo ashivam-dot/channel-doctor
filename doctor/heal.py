@@ -6,7 +6,7 @@ import json
 import urllib.error
 from pathlib import Path
 
-from . import config, fixer, telegram
+from . import config, fixer, mission, telegram
 from .brain import Brain
 from .github import GitHub
 from .playbook import classify, fingerprint, tail
@@ -235,5 +235,5 @@ class Healer:
         log = "\n".join(f'File "{p}", line 1' for p in chosen)
         task = (f"- This is a planned improvement from the twice-weekly review, not a failure:\n  {r.get('change')}\n"
                 f"  Evidence: {r.get('evidence')}\n  Implement it only if it is small, safe, testable and consistent with "
-                f"CHANNEL.md; otherwise set fixable_in_code false.\n")
+                f"CHANNEL.md and the mission below; otherwise set fixable_in_code false.\n{mission.brief(3500)}\n")
         self.attempt(rec, "improve", None, "n/a", log, task, "", "", improvement=True)

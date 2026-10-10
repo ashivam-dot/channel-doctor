@@ -7,37 +7,60 @@ import os
 import statistics
 from datetime import datetime
 
-from . import config, telegram
+from . import config, growth, mission, telegram
 from .brain import Brain
 from .github import GitHub
-from .state import iso, now
+from .state import IssueState, iso, now
 from .watch import feed, hours
 
 HOME = os.environ.get("GITHUB_REPOSITORY", "ashivam-dot/channel-doctor")
 
-PROMPT = """You review one automated YouTube channel twice a week for its owner. Be concrete and evidence-led.
+PROMPT = """{mission}
+
+You review one automated YouTube channel twice a week for its owner, against the mission above: the fastest safe
+route into YPP. Be concrete and evidence-led.
 Rules: never promise views or earnings; a pattern needs at least 4 videos on each side before you call it proven,
 otherwise label it a hypothesis; respect the channel rules (CHANNEL.md excerpt) and YouTube policy (no faked real
-people or events, no misleading titles); prefer changes the automation can apply itself.
+people or events, no misleading titles); prefer changes the automation can apply itself; rank recommendations by how
+much they shorten the time to the next finish line (subscriber conversion is usually the binding constraint).
+Judge the channel as a YPP reviewer would: could its videos be called template, repetitive, shock-bait or reused?
 Mark a recommendation auto_ok=true only if it is a small, low-risk change to the channel's own code (target "code"),
-for example a title template, a timing window, a topic weight, a caption style, and it does not touch credentials,
-safety checks or fact checks. Everything else is auto_ok=false.{hands_off}
+for example a title template, a timing window, a topic weight, a caption style, a subscribe prompt, and it does not
+touch credentials, safety checks or fact checks. Everything else is auto_ok=false.{hands_off}
 Return JSON only:
 {{"health": "one sentence", "working": ["..."], "not_working": ["..."],
+  "ypp_lever": "the single change that most shortens this channel's time to its next finish line, and why",
+  "inauthentic_risk": {{"level": "low|medium|high", "why": "what a YPP reviewer would flag, and the fix"}},
   "recommendations": [{{"change": "imperative, specific", "evidence": "numbers from the data", "target": "code|titles|timing|topics|format|ops",
                         "risk": "low|medium|high", "auto_ok": false}}]}}
 At most 4 recommendations, most valuable first.
 
 Channel: {name}
 About: {about}
+Road to YPP: {road}
 Recent uploads (newest first: hours since publish, views, title):
 {uploads}
 Summary: {summary}
+Results of earlier automatic improvements (median views of videos with 24 h+ of data, before vs after):
+{experiments}
 Automation reliability (last 7 days): {reliability}
 Channel's own learnings file (excerpt):
 {learnings}
 CHANNEL.md excerpt:
 {rules}
+"""
+
+FOCUS = """{mission}
+
+These are this week's reviews of all the owner's channels with their Road-to-YPP numbers. Decide where effort should
+go so that at least one channel reaches a finish line as early as possible before 31 January 2027, without policy risk.
+Return JSON only:
+{{"summary": "two sentences: which channel is closest to earning and what stands in the way",
+  "focus": [{{"channel": "name", "why": "evidence", "next_step": "the concrete step this week"}}],
+  "deprioritise": [{{"channel": "name", "why": "evidence"}}]}}
+At most 3 focus entries, closest to earning first.
+
+{channels}
 """
 
 
@@ -91,11 +114,68 @@ def learnings(gh: GitHub, owner: str, ch: dict) -> tuple[str, str]:
     return learn[:3000], rules[:3000]
 
 
+def median_views(vids: list[dict], at: datetime, after: datetime | None = None, before: datetime | None = None):
+    pick = [v["views"] for v in vids if v["views"] is not None and hours(v["published"], at) >= 24
+            and (after is None or datetime.fromisoformat(v["published"]) > after)
+            and (before is None or datetime.fromisoformat(v["published"]) <= before)]
+    return (statistics.median(pick), len(pick)) if pick else (None, 0)
+
+
+def experiments(gh: GitHub, owner: str, ch: dict, vids: list[dict], at: datetime) -> str:
+    out = []
+    for lane in ch.get("lanes", []):
+        if lane.get("mode") != "fix":
+            continue
+        try:
+            log = IssueState(gh, f"{owner}/{lane['repo']}", "Doctor log", "doctor", "", dry=True).data
+        except Exception:
+            continue
+        for f in log.get("fixes", [])[-6:]:
+            if f.get("workflow") != "*":
+                continue
+            t = datetime.fromisoformat(f["at"])
+            b, nb = median_views(vids, at, before=t)
+            a, na = median_views(vids, at, after=t)
+            verdict = ("too early" if na < 4 or nb < 4 else
+                       "helped" if a > b * 1.15 else "hurt" if a < b * 0.85 else "no clear change")
+            out.append(f"- {f['at'][:10]} \"{f['summary']}\" ({f.get('status')}): before {b} over {nb} videos, "
+                       f"after {a} over {na} videos -> {verdict}")
+    return "\n".join(out) or "(none yet)"
+
+
+def road_line(info: dict) -> str:
+    if not info:
+        return "no numbers yet"
+    pub = info.get("public") or {}
+    ana = info.get("analytics") or {}
+    subs = info.get("subs") or 0
+    views = ana.get("views_total") if info.get("exact") else (pub.get("shorts_views_listed", 0) + pub.get("long_views_listed", 0))
+    conv = f"{1000 * subs / views:.1f} subscribers per 1,000 views" if views else "conversion unknown"
+    parts = [f"{subs} subscribers ({conv})", f"route {info.get('route')}", f"{info.get('days_to_deadline')} days to the deadline"]
+    if info.get("subs_per_day") is not None:
+        parts.append(f"{info['subs_per_day']:.1f} subscribers/day")
+    for tier in ("expanded", "full"):
+        eta = info.get(f"{tier}_sub_eta_days")
+        parts.append(f"{tier} sub line {'reached' if eta == 0 else 'unknown pace' if eta is None else f'~{eta:.0f} days away'}")
+    if info.get("exact"):
+        parts.append(f"exact: Shorts views 90d {ana.get('shorts_views_90d')}, long-form hours 365d {ana.get('long_hours_365d')}, "
+                     f"net subscribers 28d {ana.get('subs_net_28d')}")
+    else:
+        parts.append("Shorts-views and watch-hour totals unavailable (public numbers only)")
+    return "; ".join(parts)
+
+
 def main(dry: bool = False):
     cfg, gh, brain, at = config.load(), GitHub(), Brain(), now()
     report = {"at": iso(at), "channels": {}}
     md = [f"# Channel review {at:%Y-%m-%d}", ""]
     tg = [f"Channel review {at:%d %b}"]
+    central = IssueState(gh, HOME, "Doctor state", "doctor", "", dry=True).data
+    road = (central.get("road") or {}).get("info") or {}
+    if not road:
+        _, road, _ = growth.snapshot(gh, cfg, json.loads(json.dumps(central)), at)
+    brief = mission.brief()
+    focus_in = []
     for key, ch in cfg["channels"].items():
         if ch.get("drill"):
             continue
@@ -120,7 +200,9 @@ def main(dry: bool = False):
             notes.append("The channel (re)started publishing in the last day or two; YouTube's public feed lags for new "
                          "channels, so missing uploads in the feed are not evidence of a stall.")
         notes.append("A newer version of a video that replaced an older one (the older made private) is deliberate, not a duplicate.")
-        prompt = PROMPT.format(name=ch["name"], about=ch.get("about", ""), uploads=table, summary=summary,
+        rl = road_line(road.get(key, {}))
+        prompt = PROMPT.format(mission=brief, name=ch["name"], about=ch.get("about", ""), road=rl, uploads=table,
+                               summary=summary, experiments=experiments(gh, cfg["owner"], ch, vids, at),
                                reliability=reliability(gh, cfg["owner"], ch, at), learnings=learn, rules=rules,
                                hands_off="".join("\n" + n for n in notes))
         print(f"reviewing {ch['name']} ({len(vids)} uploads in feed)")
@@ -130,8 +212,16 @@ def main(dry: bool = False):
         for r in res.get("recommendations", []):
             if locked or r.get("risk") != "low" or r.get("target") != "code":
                 r["auto_ok"] = False
-        report["channels"][key] = {"name": ch["name"], "summary": summary, **res}
-        md += [f"## {ch['name']}", "", f"_{summary}_", "", f"**Health:** {res.get('health', 'no answer from the model')}", ""]
+        report["channels"][key] = {"name": ch["name"], "summary": summary, "road": rl, **res}
+        risk = res.get("inauthentic_risk") or {}
+        focus_in.append(f"## {ch['name']}\nRoad: {rl}\nUploads: {summary}\nHealth: {res.get('health')}\n"
+                        f"Lever: {res.get('ypp_lever')}\nInauthentic-content risk: {risk.get('level')} ({risk.get('why')})")
+        md += [f"## {ch['name']}", "", f"_{summary}_", "", f"**Road to YPP:** {rl}", "",
+               f"**Health:** {res.get('health', 'no answer from the model')}", ""]
+        if res.get("ypp_lever"):
+            md += [f"**Biggest lever:** {res['ypp_lever']}", ""]
+        if risk:
+            md += [f"**Inauthentic-content risk:** {risk.get('level')} ({risk.get('why')})", ""]
         if res.get("working"):
             md += ["**Working**", *[f"- {w}" for w in res["working"]], ""]
         if res.get("not_working"):
@@ -142,7 +232,20 @@ def main(dry: bool = False):
         md.append("")
         recs = res.get("recommendations", [])
         tg.append(f"\n{ch['name']}: {res.get('health', 'no answer')}")
+        if res.get("ypp_lever"):
+            tg.append(f"  Lever: {res['ypp_lever']}")
+        if risk.get("level") in ("medium", "high"):
+            tg.append(f"  YPP risk ({risk['level']}): {risk.get('why')}")
         tg += [f"  - {r.get('change')}{' (doctor will apply)' if r.get('auto_ok') else ''}" for r in recs[:2]]
+
+    focus = brain.ask_json(FOCUS.format(mission=brief, channels="\n\n".join(focus_in)), "deep", models=6, rounds=2, pause=20) or {}
+    report["focus"] = focus
+    if focus:
+        md[2:2] = ["## Where to focus", "", focus.get("summary", ""), "",
+                   *[f"- **{f.get('channel')}**: {f.get('next_step')} ({f.get('why')})" for f in focus.get("focus", [])],
+                   *[f"- Deprioritise **{d.get('channel')}**: {d.get('why')}" for d in focus.get("deprioritise", [])], ""]
+        tg[1:1] = ["\nROAD TO YPP: " + focus.get("summary", ""),
+                   *[f"  Focus {f.get('channel')}: {f.get('next_step')}" for f in focus.get("focus", [])]]
     md.append(f"_Model: {brain.used or 'none'}_")
     text = "\n".join(md)
     print(text)
