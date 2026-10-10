@@ -42,6 +42,8 @@ def check(gh: GitHub, cfg: dict, at: datetime) -> tuple[dict[str, str], dict[str
     owner = cfg["owner"]
     blind = 0
     for key, ch in cfg["channels"].items():
+        if ch.get("drill"):
+            continue
         lines = status.setdefault(ch["name"], [])
         if ch.get("youtube"):
             try:

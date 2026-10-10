@@ -90,6 +90,8 @@ def main(dry: bool = False):
     md = [f"# Channel review {at:%Y-%m-%d}", ""]
     tg = [f"Channel review {at:%d %b}"]
     for key, ch in cfg["channels"].items():
+        if ch.get("drill"):
+            continue
         vids = []
         if ch.get("youtube"):
             try:

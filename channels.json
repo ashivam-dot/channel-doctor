@@ -129,6 +129,21 @@
         }
       ]
     },
+    "drill": {
+      "name": "Doctor drill",
+      "youtube": null,
+      "drill": true,
+      "about": "Fire-drill repo with a planted bug; proves the heal path end to end. Not a channel.",
+      "lanes": [
+        {
+          "repo": "doctor-drill",
+          "mode": "fix",
+          "workflows": {"run.yml": {"name": "run"}},
+          "test": "python -m pip install -q pytest && python -m pytest -q",
+          "editable": ["desk/**/*.py"]
+        }
+      ]
+    },
     "universe": {
       "name": "Universe Receipts",
       "youtube": "UCal2hAu7VaZimTwaAgeBEyg",
