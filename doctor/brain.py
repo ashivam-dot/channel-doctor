@@ -44,6 +44,7 @@ class Brain:
         self._models: list[str] | None = None
         self.used: str | None = None
         self.down = False
+        self.dead: set[str] = set()
 
     @property
     def ready(self) -> bool:
@@ -52,7 +53,7 @@ class Brain:
     def _req(self, url: str, body=None):
         req = urllib.request.Request(url, data=json.dumps(body).encode() if body is not None else None,
                                      headers={"x-goog-api-key": self.key, "Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=180) as r:
+        with urllib.request.urlopen(req, timeout=120) as r:
             return json.load(r)
 
     def models(self) -> list[str]:
@@ -80,7 +81,10 @@ class Brain:
             ranked = ["models/gemini-2.5-flash", "models/gemini-2.5-flash-lite"]
         body = {"contents": [{"role": "user", "parts": [{"text": prompt}]}],
                 "generationConfig": {"responseMimeType": "application/json", "temperature": 0.2}}
-        busy = list(ranked)
+        if self.used and f"models/{self.used}" in ranked:
+            ranked.remove(f"models/{self.used}")
+            ranked.insert(0, f"models/{self.used}")
+        busy = [m for m in ranked if m not in self.dead]
         for n in range(rounds):
             if n:
                 time.sleep(pause * n)
@@ -97,6 +101,8 @@ class Brain:
                     print(f"{model}: HTTP {e.code}")
                     if e.code in (429, 500, 503, 504):
                         retry.append(model)
+                    elif e.code in (400, 403, 404):
+                        self.dead.add(model)
                 except Exception as exc:
                     print(f"{model}: {type(exc).__name__}")
                     retry.append(model)

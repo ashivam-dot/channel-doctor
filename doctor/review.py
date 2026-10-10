@@ -103,7 +103,9 @@ def main(dry: bool = False):
         prompt = PROMPT.format(name=ch["name"], about=ch.get("about", ""), uploads=table, summary=summary,
                                reliability=reliability(gh, cfg["owner"], ch, at), learnings=learn, rules=rules,
                                hands_off="\nThis channel is hands-off: every recommendation is auto_ok=false, written advice only." if ch.get("hands_off") else "")
-        res = brain.ask_json(prompt, "deep") or {}
+        print(f"reviewing {ch['name']} ({len(vids)} uploads in feed)")
+        res = brain.ask_json(prompt, "deep", models=6, rounds=2, pause=20) or {}
+        print(f"  -> {'ok via ' + str(brain.used) if res else 'no answer'}")
         if ch.get("hands_off") or not any(l.get("mode") == "fix" for l in ch.get("lanes", [])):
             for r in res.get("recommendations", []):
                 r["auto_ok"] = False

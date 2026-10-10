@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 from pathlib import Path
 
 from . import config
@@ -87,6 +88,7 @@ def selftest() -> int:
 
 
 def main():
+    sys.stdout.reconfigure(line_buffering=True)
     p = argparse.ArgumentParser(prog="doctor")
     sub = p.add_subparsers(dest="cmd", required=True)
     h = sub.add_parser("heal")
