@@ -106,6 +106,8 @@ def main(dry: bool = False):
             except Exception as exc:
                 print(f"{ch['name']}: feed unreadable ({type(exc).__name__})")
         table, summary = uploads_table(vids, at)
+        if not ch.get("youtube"):
+            table, summary = "(no YouTube feed configured)", "upload numbers unknown: no public feed is configured for this channel"
         learn, rules = learnings(gh, cfg["owner"], ch)
         n_scored = scored(vids, at)
         notes = []
