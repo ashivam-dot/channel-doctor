@@ -224,7 +224,9 @@ def road(name: str, m: dict, history: list[list], today: date, route: str) -> tu
     if subs is None:
         return f"{name}: no subscriber number yet", {}
     s90, h365 = m.get("shorts_views_90d"), m.get("long_hours_365d")
-    sub_rate = rate(history, 1) or ((m["subs_net_28d"] / 28) if m.get("subs_net_28d") is not None else None)
+    sub_rate = rate(history, 1)
+    if sub_rate is None and m.get("subs_net_28d"):
+        sub_rate = m["subs_net_28d"] / 28
     parts, info = [f"{name}: {subs:,} subs"], {"subs": subs, "subs_per_day": sub_rate, "route": route}
     if route in ("shorts", "both") and s90 is not None:
         if not m.get("exact"):

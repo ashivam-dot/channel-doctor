@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import statistics
+import time
 from datetime import datetime
 
 from . import config, growth, mission, telegram
@@ -65,6 +66,7 @@ At most 3 focus entries, closest to earning first.
 
 
 MIN_SCORED = 12  # videos with 24 h+ of views before any change may be applied automatically
+RETRY_PAUSE_S = 60  # free-tier Gemini limits are per minute
 
 
 def scored(vids: list[dict], at: datetime) -> int:
@@ -207,6 +209,9 @@ def main(dry: bool = False):
                                hands_off="".join("\n" + n for n in notes))
         print(f"reviewing {ch['name']} ({len(vids)} uploads in feed)")
         res = brain.ask_json(prompt, "deep", models=6, rounds=2, pause=20) or {}
+        if not res and brain.ready:
+            time.sleep(RETRY_PAUSE_S)
+            res = brain.ask_json(prompt, "deep", models=6, rounds=2, pause=20) or {}
         print(f"  -> {'ok via ' + str(brain.used) if res else 'no answer'}")
         locked = ch.get("hands_off") or n_scored < MIN_SCORED or not any(l.get("mode") == "fix" for l in ch.get("lanes", []))
         for r in res.get("recommendations", []):
