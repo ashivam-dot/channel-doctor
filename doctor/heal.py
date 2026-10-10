@@ -136,6 +136,9 @@ class Healer:
                    "I already tried this failure in the last 24 h" if self.recent(fp, {"fixed", "fix-failed", "fix-refused"}, 24)
                    else "today's fix budget is used up")
             plan = self.diagnose(wf_name, steps, log, wf_file, extra + "- Diagnose only: return no edits.\n")
+            if plan.get("already_fixed"):
+                return self.finish(rec, "already-fixed", f"Cause: {plan.get('diagnosis')}\nAlready fixed on the "
+                                   "default branch; nothing to do.", None, url)
             msg = f"Cause: {plan.get('diagnosis') or evidence}\n" + (f"What to do: {plan['human_action']}\n" if plan.get("human_action") else "")
             notify = None if self.recent(fp, {"escalated"}, 12) else "NEEDS YOU"
             return self.finish(rec, "escalated", msg + f"(No code change: {why}.)", notify, url)
@@ -150,6 +153,9 @@ class Healer:
             return self.finish(rec, "brain-down", f"Cause so far: {rec.get('evidence', '')}\nGemini was overloaded for every "
                                "model after three rounds, so no fix yet; the next failure of this workflow tries again.",
                                notify, url)
+        if isinstance(plan, dict) and plan.get("already_fixed") and not improvement:
+            return self.finish(rec, "already-fixed", f"Cause: {plan.get('diagnosis')}\nAlready fixed on the default "
+                               "branch; nothing to do.", None, url)
         staged, why = fixer.validate(plan, self.lane, self.target)
         tries = 0
         while not why and tries < 2:

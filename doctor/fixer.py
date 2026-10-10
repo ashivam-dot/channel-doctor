@@ -78,12 +78,14 @@ Rules:
 - If the cause is external (outage, quota, billing, revoked credentials, a missing secret, a site change you cannot see),
   or you are not confident, set fixable_in_code to false and explain what a human must do.
 - Each edit replaces one exact, unique snippet: `find` must appear exactly once in the file, copied verbatim with its indentation.
+- If commits since the failed run already fix the cause, set already_fixed to true and return no edits.
 - Respect the channel rules in CHANNEL.md.
 {extra}
 Return JSON only:
 {{"diagnosis": "one or two plain sentences on the root cause",
   "category": "code|data|config|external|unknown",
   "fixable_in_code": true,
+  "already_fixed": false,
   "confidence": 0.0,
   "edits": [{{"path": "relative/path.py", "find": "exact old text", "replace": "new text"}}],
   "summary": "imperative commit subject, under 70 characters",
