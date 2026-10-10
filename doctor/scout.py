@@ -85,6 +85,8 @@ def main(dry: bool = False):
     print(f"{len(cands)} licence-safe candidates")
     stack = "\n".join(f"- {ch['name']}: {ch.get('about', '')}" for ch in cfg["channels"].values())
     stack += "\nNeeds:\n" + "\n".join(f"- {n['need']}" for n in cfg.get("scout", []))
+    stack += ("\nAlready in use (never suggest these again; a newer major version or a clearly better replacement "
+              f"is fine): {cfg.get('in_use', '')}")
     listing = "\n".join(f"- {c['name']} ({c['url']}) | {c['license']} | {c['stars']} stars/likes | updated {c['updated']} | "
                         f"{c['need']} | {c['about']}" for c in list(cands.values())[:80])
     res = brain.ask_json(PROMPT.format(stack=stack, cands=listing or "(none)"), "deep") if cands else {}

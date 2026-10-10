@@ -153,6 +153,7 @@
       "lanes": []
     }
   },
+  "in_use": "Gemini TTS (Sulafat) and Gemini Flash; Kokoro-82M (am_puck, am_fenrir); Chatterbox voice cloning; Whisper / faster-whisper alignment; Gemma 4 12B and Gemma 3 27B through llama.cpp; Depth-Anything-V2-Small (transformers, CPU) for parallax; face_recognition; three.js photoreal globe in headless Chromium; ffmpeg; Wikimedia Commons photos; World Bank data; UTMOS22 voice scoring; Modal for Atlas renders; Buffer for Mool Katha posting",
   "scout": [
     {"need": "Hindi and English text-to-speech with emotion, CPU or free API", "github": "text-to-speech hindi", "hf": "text-to-speech"},
     {"need": "Voice cloning / expressive TTS that runs on CPU", "github": "expressive tts cpu", "hf": "text-to-speech"},
