@@ -145,6 +145,11 @@ class Healer:
     def attempt(self, rec, wf_name, wf_file, steps, log, extra, url, default, improvement=False):
         ctx = fixer.context(self.target, self.lane, log, wf_file)
         plan = fixer.ask(self.brain, self.lane, wf_name, steps, log, ctx, extra) if self.brain.ready else None
+        if plan is None and self.brain.down:
+            notify = None if improvement or self.recent(rec["fp"], {"brain-down", "escalated"}, 12) else "WATCHING"
+            return self.finish(rec, "brain-down", f"Cause so far: {rec.get('evidence', '')}\nGemini was overloaded for every "
+                               "model after three rounds, so no fix yet; the next failure of this workflow tries again.",
+                               notify, url)
         staged, why = fixer.validate(plan, self.lane, self.target)
         tries = 0
         while not why and tries < 2:

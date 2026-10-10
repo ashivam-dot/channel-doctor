@@ -43,6 +43,7 @@ class Brain:
         self.key = key if key is not None else (os.environ.get("DOCTOR_GEMINI_API_KEY") or os.environ.get("GEMINI_API_KEY"))
         self._models: list[str] | None = None
         self.used: str | None = None
+        self.down = False
 
     @property
     def ready(self) -> bool:
@@ -67,28 +68,40 @@ class Brain:
             self._models = names
         return self._models
 
-    def ask_json(self, prompt: str, tier: str = "deep", attempts: int = 4):
+    def ask_json(self, prompt: str, tier: str = "deep", models: int = 10, rounds: int = 3, pause: float = 40):
+        """Walk the ranked models; overloaded (503) or rate-limited (429) ones are retried in later rounds."""
+        self.down = False
         if not self.ready:
             return None
         try:
-            ranked = rank(self.models(), tier)
+            ranked = rank(self.models(), tier)[:models]
         except Exception as exc:
             print(f"model list failed: {type(exc).__name__}")
             ranked = ["models/gemini-2.5-flash", "models/gemini-2.5-flash-lite"]
         body = {"contents": [{"role": "user", "parts": [{"text": prompt}]}],
                 "generationConfig": {"responseMimeType": "application/json", "temperature": 0.2}}
-        for model in ranked[:attempts]:
-            try:
-                res = self._req(f"{BASE}/{model}:generateContent", body)
-                parts = res["candidates"][0]["content"]["parts"]
-                out = _json("".join(p.get("text", "") for p in parts if not p.get("thought")))
-                if out is not None:
-                    self.used = model.split("/")[-1]
-                    return out
-            except urllib.error.HTTPError as e:
-                print(f"{model}: HTTP {e.code}")
-                if e.code == 429:
-                    time.sleep(3)
-            except Exception as exc:
-                print(f"{model}: {type(exc).__name__}")
+        busy = list(ranked)
+        for n in range(rounds):
+            if n:
+                time.sleep(pause * n)
+            retry = []
+            for model in busy:
+                try:
+                    res = self._req(f"{BASE}/{model}:generateContent", body)
+                    parts = res["candidates"][0]["content"]["parts"]
+                    out = _json("".join(p.get("text", "") for p in parts if not p.get("thought")))
+                    if out is not None:
+                        self.used = model.split("/")[-1]
+                        return out
+                except urllib.error.HTTPError as e:
+                    print(f"{model}: HTTP {e.code}")
+                    if e.code in (429, 500, 503, 504):
+                        retry.append(model)
+                except Exception as exc:
+                    print(f"{model}: {type(exc).__name__}")
+                    retry.append(model)
+            if not retry:
+                break
+            busy = retry
+        self.down = True
         return None
