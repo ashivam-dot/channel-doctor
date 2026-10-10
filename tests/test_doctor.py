@@ -251,6 +251,8 @@ def test_road_line_and_merge():
     assert "120 subs" in line and "Shorts views 90d 50,000" in line and info["subs_per_day"] == pytest.approx(2.0)
     assert info["expanded_sub_eta_days"] == pytest.approx(190) and info["days_to_deadline"] == 112
     assert "no subscriber number" in growth.road("X", {"subs": None}, [], at.date(), "shorts")[0]
+    lagging = growth.merged({"subs": 7, "shorts_views_listed": 3918}, dict(fresh, shorts_views_90d=0, through="2026-10-09"), at)
+    assert "listed Shorts show 3,918" in growth.road("Orbitwire", lagging, [], at.date(), "shorts")[0]
 
 
 def test_review_road_line_conversion():

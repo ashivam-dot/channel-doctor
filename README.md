@@ -30,7 +30,7 @@ Partner Program before the 31 January 2027 rule change, without monetisation-pol
 
 - Repository variable `DOCTOR_PAUSED=true`: stops the doctor in that repo (here: stops watch, review and scout).
 - Repository variable `DOCTOR_MODE=report` in a channel repo: diagnose and alert, never change code.
-- Telegram: `/status`, `/digest`, `/review`, `/scout`, `/help` (answered within about 15 minutes).
+- Telegram: `/status`, `/digest`, `/ypp`, `/review`, `/scout`, `/help` (answered within about 15 minutes).
 - Each channel repo has a **Doctor log** issue with every decision; this repo has **Doctor state** and **Scout memory**.
 
 ## Adding a channel

@@ -227,7 +227,12 @@ def road(name: str, m: dict, history: list[list], today: date, route: str) -> tu
     sub_rate = rate(history, 1) or ((m["subs_net_28d"] / 28) if m.get("subs_net_28d") is not None else None)
     parts, info = [f"{name}: {subs:,} subs"], {"subs": subs, "subs_per_day": sub_rate, "route": route}
     if route in ("shorts", "both") and s90 is not None:
-        parts.append(f"Shorts views 90d {s90:,}" if m.get("exact") else f"views on listed Shorts {s90:,}")
+        if not m.get("exact"):
+            parts.append(f"views on listed Shorts {s90:,}")
+        else:
+            lag = m.get("listed", 0) > s90
+            parts.append(f"Shorts views 90d {s90:,}" + (f" (Analytics lags to {m.get('through')}; listed Shorts show "
+                                                        f"{m['listed']:,})" if lag else ""))
     if route in ("longform", "both") and h365 is not None:
         parts.append(f"watch hours {h365:,.0f}")
     days_left = (DEADLINE - today).days
@@ -244,9 +249,10 @@ def road(name: str, m: dict, history: list[list], today: date, route: str) -> tu
 
 def merged(public_numbers: dict, exact: dict | None, now: datetime) -> dict:
     m = {"subs": public_numbers.get("subs"), "shorts_views_90d": public_numbers.get("shorts_views_listed"),
-         "long_hours_365d": None, "exact": False}
+         "listed": public_numbers.get("shorts_views_listed") or 0, "long_hours_365d": None, "exact": False}
     if exact and not exact.get("error") and exact.get("at") and \
             now - datetime.fromisoformat(exact["at"]) < timedelta(hours=48):
-        m |= {k: exact[k] for k in ("subs", "shorts_views_90d", "long_hours_365d", "subs_net_28d", "views_28d") if k in exact}
+        m |= {k: exact[k] for k in ("subs", "shorts_views_90d", "long_hours_365d", "subs_net_28d", "views_28d", "through")
+              if k in exact}
         m["exact"] = "analytics_error" not in exact
     return m
