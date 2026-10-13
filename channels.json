@@ -59,6 +59,31 @@
         }
       ]
     },
+    "kahaani-chaos": {
+      "name": "Kahaani Chaos",
+      "youtube": "UCX-96TVtOBCEkDMloHuYAHw",
+      "quiet_h": 20,
+      "watch_from": "2026-10-15T00:00:00+00:00",
+      "goal": {"route": "shorts"},
+      "about": "Original Hindi magical and mystery twist-story Shorts (13+, not made for kids): AI folk-fantasy paintings painted on runner CPU, Gemini TTS Charon narrator, 12:30 and 20:30 IST from a ready buffer of finished Shorts.",
+      "lanes": [
+        {
+          "repo": "kahaani-chaos",
+          "mode": "fix",
+          "analytics": true,
+          "workflows": {
+            "run.yml": {"name": "run", "max_h": 15},
+            "health.yml": {"name": "health", "max_h": 9, "fix": false},
+            "tests.yml": {"name": "tests"}
+          },
+          "redispatch": [],
+          "apt": ["ffmpeg"],
+          "test": "uv sync --frozen --extra dev && uv run pytest -q",
+          "editable": ["kahaani/**/*.py"],
+          "learnings": "state:LEARNINGS.md"
+        }
+      ]
+    },
     "orbitwire": {
       "name": "Orbitwire",
       "youtube": "UCfqAy1IxE2Cwu9pmZGMambA",
