@@ -36,7 +36,7 @@ class IssueState:
             self.data = json.loads(m.group(1)) if m else {}
 
     def _body(self) -> str:
-        return f"{self.intro}\n\n<details><summary>doctor state</summary>\n\n```json\n{json.dumps(self.data, indent=1)}\n```\n</details>\n"
+        return f"{self.intro}\n\n<details><summary>doctor state</summary>\n\n```json\n{json.dumps(self.data, indent=1, ensure_ascii=False)}\n```\n</details>\n"
 
     def save(self):
         if self.dry:

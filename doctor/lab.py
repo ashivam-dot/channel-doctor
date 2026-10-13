@@ -21,7 +21,6 @@ import json
 import os
 import re
 import statistics
-import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -37,6 +36,8 @@ BREAKOUT_X = 3.0
 BREAKOUT_MIN_VIEWS = 200
 MAX_COMMENTS, MAX_LOCALIZE, MAX_RETITLE = 3, 3, 1
 RETITLE_JUDGE_H = 72
+DONE_KEEP_H = 24 * 8
+MAX_RETITLES_KEPT = 30
 
 
 def hours(stamp: str, at: datetime) -> float:
@@ -59,9 +60,10 @@ def breakouts(videos: dict[str, list[dict]], at: datetime, seen: dict) -> list[s
                 continue
             x = v["views"] / usual
             if x >= BREAKOUT_X:
-                seen[v["id"]] = {"at": at.isoformat(), "channel": name, "title": v["title"][:90], "views": v["views"],
+                title = v.get("title") or ""
+                seen[v["id"]] = {"at": at.isoformat(), "channel": name, "title": title[:90], "views": v["views"],
                                  "x": round(x, 1)}
-                out.append(f"BREAKOUT {name}: \"{v['title'][:80]}\" has {v['views']:,} views in "
+                out.append(f"BREAKOUT {name}: \"{title[:80]}\" has {v['views']:,} views in "
                            f"{hours(v['published'], at):.0f} h, {x:.1f}x the channel's usual {usual:,.0f}.\n"
                            f"Do now: a follow-up on the same topic within 24 h (next angle, what happened next, the "
                            f"question viewers ask), and the same hook style in the next uploads.\nhttps://youtu.be/{v['id']}")
@@ -81,6 +83,7 @@ class YouTube:
         self._token = grant["access_token"]
         self.scopes = sorted(s.rsplit("/", 1)[-1] for s in grant.get("scope", "").split())
         self.units = 0
+        self.channel_id = ""
 
     @property
     def can_write(self) -> bool:
@@ -97,6 +100,7 @@ class YouTube:
 
     def uploads(self, n: int = 50) -> list[dict]:
         ch = self.call("GET", "channels", {"part": "contentDetails", "mine": "true"})["items"][0]
+        self.channel_id = ch.get("id", "")
         playlist = ch["contentDetails"]["relatedPlaylists"]["uploads"]
         items = self.call("GET", "playlistItems", {"part": "contentDetails", "playlistId": playlist, "maxResults": n})
         ids = [i["contentDetails"]["videoId"] for i in items.get("items", [])]
@@ -104,6 +108,12 @@ class YouTube:
             return []
         res = self.call("GET", "videos", {"part": "snippet,statistics,status,localizations", "id": ",".join(ids)})
         return res.get("items", [])
+
+    def commented(self, video_id: str) -> bool:
+        """Whether the channel already has a top-level comment on the video (so a lost state never doubles it)."""
+        res = self.call("GET", "commentThreads", {"part": "snippet", "videoId": video_id, "maxResults": 100})
+        return any(t["snippet"]["topLevelComment"]["snippet"].get("authorChannelId", {}).get("value") == self.channel_id
+                   for t in res.get("items", []))
 
 
 def suggestions(query: str, lang: str) -> list[str]:
@@ -188,26 +198,43 @@ def run_experiments(yt: YouTube, brain, ch: dict, state: dict, at: datetime, dry
     vids = [v for v in yt.uploads() if v.get("status", {}).get("privacyStatus") == "public" and published(v)]
     about = ch.get("about", "")[:300]
     done = state.setdefault("done", {})
+    prune(state, at)
 
     def ask(prompt):
         return brain.ask_json(prompt, "fast", models=6, rounds=2, pause=15) if brain.ready else None
 
+    def write(kind, vid, what, *call) -> bool:
+        """One YouTube write; a refusal is recorded so the same video is not retried every day."""
+        if dry:
+            return True
+        try:
+            yt.call(*call)
+            return True
+        except Exception as e:
+            code = getattr(e, "code", None) or type(e).__name__
+            log.append(f"{what} on {vid} refused ({code})")
+            done.setdefault(kind, {})[vid] = {"at": at.isoformat(), "error": str(code)}
+            return False
+
     if "comment" in kinds:
         for v in [v for v in vids if hours(published(v), at) <= 48 and v["id"] not in done.get("comment", {})][:MAX_COMMENTS]:
             sn = v["snippet"]
+            try:
+                if yt.commented(v["id"]):
+                    done.setdefault("comment", {})[v["id"]] = {"at": at.isoformat(), "views": views(v), "found": True}
+                    continue
+            except Exception as e:
+                done.setdefault("comment", {})[v["id"]] = {"at": at.isoformat(), "error": str(getattr(e, "code", "") or type(e).__name__)}
+                log.append(f"comments on {v['id']} could not be read; skipped (comments may be off)")
+                continue
             text = clean_comment((ask(COMMENT.format(channel=ch["name"], about=about, language=LANG_NAMES.get(lang, lang),
                                                      title=sn["title"], description=sn.get("description", "")[:700])) or {}).get("comment"))
             if not text:
                 continue
-            if not dry:
-                try:
-                    yt.call("POST", "commentThreads", {"part": "snippet"},
-                            {"snippet": {"videoId": v["id"], "topLevelComment": {"snippet": {"textOriginal": text}}}}, 50)
-                except urllib.error.HTTPError as e:
-                    log.append(f"comment on {v['id']} refused (HTTP {e.code}); comments may be off for it")
-                    done.setdefault("comment", {})[v["id"]] = {"at": at.isoformat(), "error": e.code}
-                    continue
-            done.setdefault("comment", {})[v["id"]] = {"at": at.isoformat(), "text": text, "views": views(v)}
+            if not write("comment", v["id"], "comment", "POST", "commentThreads", {"part": "snippet"},
+                         {"snippet": {"videoId": v["id"], "topLevelComment": {"snippet": {"textOriginal": text}}}}, 50):
+                continue
+            done.setdefault("comment", {})[v["id"]] = {"at": at.isoformat(), "views": views(v)}
             log.append(f"first comment on \"{sn['title'][:60]}\": {text}")
 
     if "localize" in kinds:
@@ -230,10 +257,10 @@ def run_experiments(yt: YouTube, brain, ch: dict, state: dict, at: datetime, dry
             added = sorted(set(local) - set(v.get("localizations") or {}))
             if not added:
                 continue
-            if not dry:
-                yt.call("PUT", "videos", {"part": "snippet,localizations"},
-                        {"id": v["id"], "snippet": keep_snippet(sn, defaultLanguage=sn.get("defaultLanguage") or lang),
-                         "localizations": local}, 50)
+            if not write("localize", v["id"], "translation", "PUT", "videos", {"part": "snippet,localizations"},
+                         {"id": v["id"], "snippet": keep_snippet(sn, defaultLanguage=sn.get("defaultLanguage") or lang),
+                          "localizations": local}, 50):
+                continue
             done.setdefault("localize", {})[v["id"]] = {"at": at.isoformat(), "languages": added}
             log.append(f"translated title and description of \"{sn['title'][:60]}\" into {', '.join(added)}")
 
@@ -242,11 +269,21 @@ def run_experiments(yt: YouTube, brain, ch: dict, state: dict, at: datetime, dry
     return log
 
 
+def prune(state: dict, at: datetime):
+    """Keep the state issue small: past the experiments' windows a video is never picked again anyway."""
+    for kind, items in state.get("done", {}).items():
+        for vid in [k for k, d in items.items() if hours(d["at"], at) > DONE_KEEP_H]:
+            items.pop(vid)
+    if len(state.get("retitles", [])) > MAX_RETITLES_KEPT:
+        state["retitles"] = state["retitles"][-MAX_RETITLES_KEPT:]
+
+
 def retitle(yt, ask, ch, vids, state, at, lang, about, dry) -> list[str]:
     log, tries = [], state.setdefault("retitles", [])
     by_id = {v["id"]: v for v in vids}
     for t in tries:
-        if "after_per_day" not in t and hours(t["at"], at) >= RETITLE_JUDGE_H and t["id"] in by_id:
+        if ("after_per_day" not in t and "error" not in t and hours(t["at"], at) >= RETITLE_JUDGE_H
+                and t["id"] in by_id):
             gained = views(by_id[t["id"]]) - t["views_before"]
             t["after_per_day"] = round(gained / (hours(t["at"], at) / 24), 1)
             t["won"] = t["after_per_day"] >= t["before_per_day"]
@@ -274,7 +311,13 @@ def retitle(yt, ask, ch, vids, state, at, lang, about, dry) -> list[str]:
         if not new or new == sn["title"] or new.isupper() or set(hashtags(sn["title"])) - set(hashtags(new)):
             continue
         if not dry:
-            yt.call("PUT", "videos", {"part": "snippet"}, {"id": v["id"], "snippet": keep_snippet(sn, title=new)}, 50)
+            try:
+                yt.call("PUT", "videos", {"part": "snippet"}, {"id": v["id"], "snippet": keep_snippet(sn, title=new)}, 50)
+            except Exception as e:
+                code = str(getattr(e, "code", "") or type(e).__name__)
+                tries.append({"id": v["id"], "at": at.isoformat(), "error": code})
+                log.append(f"retitle of {v['id']} refused ({code})")
+                continue
         h = hours(published(v), at)
         tries.append({"id": v["id"], "at": at.isoformat(), "old": sn["title"], "new": new, "views_before": views(v),
                       "before_per_day": round(views(v) / (h / 24), 1)})
@@ -297,9 +340,11 @@ def run_repo(repo: str, cfg: dict, dry: bool = False) -> list[str]:
     st = IssueState(GitHub(), repo, LAB_TITLE, "doctor", LAB_INTRO, dry)
     yt = YouTube(raw)
     at = datetime.now(timezone.utc)
-    log = run_experiments(yt, Brain(), ch, st.data, at, dry)
-    st.data["scopes"], st.data["ran"], st.data["units"] = yt.scopes, iso(at), yt.units
-    st.save()
+    try:
+        log = run_experiments(yt, Brain(), ch, st.data, at, dry)
+    finally:
+        st.data["scopes"], st.data["ran"], st.data["units"] = yt.scopes, iso(at), yt.units
+        st.save()
     print("lab:\n  " + "\n  ".join(log or ["nothing to do"]))
     if log and not dry:
         telegram.send(f"LAB {ch['name']}\n" + "\n".join(f"- {l}" for l in log))

@@ -53,9 +53,10 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           DRY: ${{ inputs.dry }}
+          REPORT_ONLY: ${{ inputs.report_only }}
         run: |
           args=()
-          if [ "$DRY" = "true" ]; then args+=(--dry); fi
+          if [ "$DRY" = "true" ] || [ "$REPORT_ONLY" = "true" ]; then args+=(--dry); fi
           python -m doctor lab "${args[@]}"
       - name: Close alerts that are over
         if: always()

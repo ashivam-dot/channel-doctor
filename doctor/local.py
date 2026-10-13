@@ -3,6 +3,7 @@ answers. No account, key or quota; about 13 GB downloaded per job, so only the h
 (`DOCTOR_LOCAL=1`). Scout bench 2026-10-13: same gate passes as Gemma 12B on a CPU runner, 2.2x faster."""
 from __future__ import annotations
 
+import atexit
 import json
 import os
 import platform
@@ -21,6 +22,7 @@ NAME = "qwen3.5-35b-a3b (local)"
 CTX = 16384
 MAX_PROMPT_CHARS = 36_000  # about 10k tokens: CPU prompt reading runs near 20 tokens/s
 NEED_FREE = 15 * 1024 ** 3
+BUDGET_S = 35 * 60  # download, start and every answer; the heal job's timeout is 60 min
 
 
 def enabled() -> bool:
@@ -75,40 +77,71 @@ def fit(prompt: str, limit: int = MAX_PROMPT_CHARS) -> str:
     return prompt[:head] + "\n...[cut to fit the local model]...\n" + prompt[-(limit - head):]
 
 
-def ask_json(prompt: str, timeout: float = 1800):
-    """One JSON answer from the local model, or None."""
+class _Server:
+    """One llama-server for the whole job, inside a time budget that leaves the job room to finish."""
+    proc: subprocess.Popen | None = None
+    port = 0
+    started: float | None = None
+
+
+def left() -> float:
+    return BUDGET_S - (time.monotonic() - _Server.started) if _Server.started is not None else BUDGET_S
+
+
+def _ensure() -> int:
+    if _Server.proc is not None and _Server.proc.poll() is None:
+        return _Server.port
+    if _Server.started is not None:
+        raise RuntimeError("llama-server stopped")
+    _Server.started = time.monotonic()
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
         port = s.getsockname()[1]
     exe, model = server(), weights()
     env = dict(os.environ, LD_LIBRARY_PATH=str(exe.parent))
-    proc = subprocess.Popen([str(exe), "-m", str(model), "--port", str(port), "--host", "127.0.0.1", "-c", str(CTX),
-                             "-t", str(os.cpu_count() or 4), "--jinja", "--no-webui"],
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
-    try:
-        deadline = time.monotonic() + 600
-        while True:
-            if proc.poll() is not None:
-                raise RuntimeError("llama-server exited")
-            try:
-                with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=2) as r:
-                    if r.status == 200:
-                        break
-            except OSError:
-                pass
-            if time.monotonic() > deadline:
-                raise RuntimeError("llama-server did not become ready")
-            time.sleep(2)
-        body = {"messages": [{"role": "user", "content": fit(prompt)}], "temperature": 0.2, "max_tokens": 3000,
-                "response_format": {"type": "json_object"}, "chat_template_kwargs": {"enable_thinking": False}}
-        req = urllib.request.Request(f"http://127.0.0.1:{port}/v1/chat/completions", data=json.dumps(body).encode(),
-                                     headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            text = json.load(r)["choices"][0]["message"]["content"]
-        return json.loads(text)
-    finally:
-        proc.terminate()
+    _Server.proc = subprocess.Popen([str(exe), "-m", str(model), "--port", str(port), "--host", "127.0.0.1",
+                                     "-c", str(CTX), "-t", str(os.cpu_count() or 4), "--jinja", "--no-webui"],
+                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
+    atexit.register(stop)
+    deadline = time.monotonic() + min(600, left())
+    while True:
+        if _Server.proc.poll() is not None:
+            raise RuntimeError("llama-server exited")
         try:
-            proc.wait(20)
-        except subprocess.TimeoutExpired:
-            proc.kill()
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=2) as r:
+                if r.status == 200:
+                    _Server.port = port
+                    return port
+        except OSError:
+            pass
+        if time.monotonic() > deadline:
+            stop()
+            raise RuntimeError("llama-server did not become ready")
+        time.sleep(2)
+
+
+def stop():
+    proc, _Server.proc = _Server.proc, None
+    if proc is None or proc.poll() is not None:
+        return
+    proc.terminate()
+    try:
+        proc.wait(20)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+
+
+def ask_json(prompt: str, timeout: float = 1800):
+    """One JSON answer from the local model, or None."""
+    port = _ensure()
+    budget = min(timeout, left())
+    if budget < 60:
+        stop()
+        raise RuntimeError("the local model's time budget for this job is used up")
+    body = {"messages": [{"role": "user", "content": fit(prompt)}], "temperature": 0.2, "max_tokens": 3000,
+            "response_format": {"type": "json_object"}, "chat_template_kwargs": {"enable_thinking": False}}
+    req = urllib.request.Request(f"http://127.0.0.1:{port}/v1/chat/completions", data=json.dumps(body).encode(),
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=budget) as r:
+        text = json.load(r)["choices"][0]["message"]["content"]
+    return json.loads(text)

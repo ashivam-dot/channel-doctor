@@ -37,8 +37,9 @@ def yt_vid(i, h, views, title=None, **extra):
 
 
 class FakeYT:
-    def __init__(self, vids, scopes=("youtube.force-ssl", "yt-analytics.readonly")):
-        self.vids, self.scopes, self.calls = vids, list(scopes), []
+    def __init__(self, vids, scopes=("youtube.force-ssl", "yt-analytics.readonly"), fail=None):
+        self.vids, self.scopes, self.calls, self.fail, self.posted = vids, list(scopes), [], fail, set()
+        self.units = 0
 
     @property
     def can_write(self):
@@ -47,8 +48,15 @@ class FakeYT:
     def uploads(self):
         return self.vids
 
+    def commented(self, video_id):
+        return video_id in self.posted
+
     def call(self, method, path, params, body=None, cost=1):
         self.calls.append((method, path, params, body))
+        if self.fail == path:
+            raise TimeoutError("slow")
+        if path == "commentThreads":
+            self.posted.add(body["snippet"]["videoId"])
         return {}
 
 
@@ -79,6 +87,52 @@ def test_a_new_upload_gets_one_clean_first_comment_and_never_twice():
     assert "केतली" in log[0] and "y1" in state["done"]["comment"]
     lab.run_experiments(yt, b, CH, state, AT)
     assert len([c for c in yt.calls if c[1] == "commentThreads"]) == 1
+    lost = {}
+    lab.run_experiments(yt, b, CH, lost, AT)
+    assert len([c for c in yt.calls if c[1] == "commentThreads"]) == 1 and lost["done"]["comment"]["y1"]["found"]
+    assert "text" not in state["done"]["comment"]["y1"]
+
+
+def test_a_failed_write_is_recorded_and_not_retried_every_day():
+    ch = {"name": "Orbitwire", "about": "", "lab": {"language": "en", "experiments": ["comment", "localize"],
+                                                     "languages": ["es"]}}
+    b = FakeBrain({"first comment": {"comment": "Which part surprised you?"},
+                   "Spanish": {"title": "Terremoto #shorts", "summary": "Uno."}})
+    yt, state = FakeYT([yt_vid(1, 5, 30)], fail="videos"), {}
+    log = lab.run_experiments(yt, b, ch, state, AT)
+    assert state["done"]["localize"]["y1"]["error"] == "TimeoutError" and any("refused" in l for l in log)
+    assert "y1" in state["done"]["comment"]
+    lab.run_experiments(yt, b, ch, state, AT)
+    assert len([c for c in yt.calls if c[1] == "videos"]) == 1
+
+
+def test_the_lab_state_saves_even_when_a_run_crashes(monkeypatch):
+    import pytest
+    from doctor import config, state as state_mod
+    saved = []
+    monkeypatch.setenv("YOUTUBE_OAUTH_JSON", "{}")
+    monkeypatch.setattr(config, "lane_for", lambda cfg, repo: (None, CH, {}))
+    monkeypatch.setattr(lab, "YouTube", lambda raw: FakeYT([]))
+    monkeypatch.setattr(state_mod, "IssueState", type("S", (), {"__init__": lambda self, *a: setattr(self, "data", {}),
+                                                                 "save": lambda self: saved.append(dict(self.data))}))
+    monkeypatch.setattr("doctor.github.GitHub", lambda: None)
+    monkeypatch.setattr(lab, "run_experiments", lambda *a: (_ for _ in ()).throw(TimeoutError("api")))
+    with pytest.raises(TimeoutError):
+        lab.run_repo("o/r", {})
+    assert saved and saved[0]["scopes"]
+
+
+def test_old_entries_are_pruned_so_the_state_issue_stays_small():
+    state = {"done": {"comment": {"old": {"at": (AT - timedelta(days=9)).isoformat()},
+                                  "new": {"at": (AT - timedelta(days=1)).isoformat()}}},
+             "retitles": [{"id": str(i)} for i in range(40)]}
+    lab.prune(state, AT)
+    assert list(state["done"]["comment"]) == ["new"] and len(state["retitles"]) == 30
+
+
+def test_a_breakout_without_a_title_does_not_crash_the_watch():
+    vids = {"K": [dict(feed_vid(0, 7, 1250), title=None)] + [feed_vid(i, 50 + i, 100) for i in range(1, 6)]}
+    assert "BREAKOUT K" in lab.breakouts(vids, AT, {})[0]
 
 
 def test_spammy_comments_are_refused():
@@ -179,6 +233,13 @@ def test_an_alert_is_closed_only_when_runs_are_green_since_and_the_channel_publi
     assert tidy.stale(TidyGH([fresh], ok, atom(ago(1))), "o/r", LANE, {"youtube": "UCx"}, AT) == []
 
 
+def test_tidy_leaves_fleet_health_and_owner_alerts_alone():
+    ok = {"run.yml": [{"conclusion": "success", "created_at": ago(1)}]}
+    for title in ("Channel fleet needs attention", "Kahaani Chaos needs attention", "No upload in the last 30 hours"):
+        issue = {"number": 8, "title": title, "updated_at": ago(8)}
+        assert tidy.stale(TidyGH([issue], ok, atom(ago(2))), "o/r", LANE, {"youtube": "UCx"}, AT) == []
+
+
 # ---- the local Qwen brain and the alternatives ----------------------------------------------------------
 def test_the_brain_asks_local_qwen_only_when_gemini_gives_nothing(monkeypatch):
     monkeypatch.setenv("DOCTOR_LOCAL", "1")
@@ -196,7 +257,55 @@ def test_a_failed_local_model_is_not_retried_in_the_same_job(monkeypatch):
     calls = []
     monkeypatch.setattr(local, "ask_json", lambda p: calls.append(1) or (_ for _ in ()).throw(OSError("disk")))
     b = brain_mod.Brain(key="")
-    assert b.ask_json("a") is None and b.ask_json("b") is None and len(calls) == 1
+    assert b.ask_json("a") is None and b.down and b.ask_json("b") is None and len(calls) == 1
+
+
+def test_one_local_server_serves_the_whole_job_within_its_budget(monkeypatch):
+    started, posted = [], []
+
+    class Proc:
+        def poll(self):
+            return None
+
+        def terminate(self):
+            pass
+
+        def wait(self, t):
+            pass
+
+    class Resp:
+        status = 200
+
+        def __init__(self, data=b"{}"):
+            self.data = data
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            pass
+
+        def read(self, *a):
+            return self.data
+
+    def urlopen(req, timeout=None):
+        if isinstance(req, str):
+            return Resp()
+        posted.append(timeout)
+        return Resp(b'{"choices": [{"message": {"content": "{\\"ok\\": 1}"}}]}')
+
+    monkeypatch.setattr(local, "server", lambda: local.DIR / "llama-server")
+    monkeypatch.setattr(local, "weights", lambda: local.DIR / "m.gguf")
+    monkeypatch.setattr(local.subprocess, "Popen", lambda *a, **k: started.append(1) or Proc())
+    monkeypatch.setattr(local.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(local._Server, "proc", None)
+    monkeypatch.setattr(local._Server, "started", None)
+    assert local.ask_json("a") == {"ok": 1} and local.ask_json("b") == {"ok": 1} and len(started) == 1
+    assert max(posted) <= local.BUDGET_S
+    monkeypatch.setattr(local._Server, "started", local.time.monotonic() - local.BUDGET_S)
+    import pytest
+    with pytest.raises(RuntimeError, match="budget"):
+        local.ask_json("c")
 
 
 def test_without_the_switch_there_is_no_local_brain(monkeypatch):

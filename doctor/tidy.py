@@ -1,9 +1,12 @@
 """Closes a channel repo's `alert` issues once what they reported is over, so a stale alert never hides a new one.
 
+Only run-failure alerts ("Studio run failed", "Promote failed (...)"): health, fleet and "needs attention" alerts
+come from checks that close their own issue, or report something only the owner can settle (billing, a held run).
 An alert is over when it has been quiet for 6 h, no watched workflow's latest finished run failed, a scheduled
 watched workflow succeeded after the alert's last update, and the channel published after it."""
 from __future__ import annotations
 
+import re
 from datetime import datetime, timezone
 
 from . import config
@@ -11,12 +14,13 @@ from .github import GitHub
 from .watch import feed, hours
 
 QUIET_H = 6
+RUN_FAILED = re.compile(r"\bfailed\b", re.I)
 
 
 def stale(gh: GitHub, repo: str, lane: dict, ch: dict, at: datetime) -> list[tuple[dict, str]]:
-    """[(issue, reason it is over)] for the repo's open alert issues."""
+    """[(issue, reason it is over)] for the repo's open run-failure alert issues."""
     issues = [i for i in gh.get(f"/repos/{repo}/issues", state="open", labels="alert", per_page=50) or []
-              if "pull_request" not in i]
+              if "pull_request" not in i and RUN_FAILED.search(i.get("title") or "")]
     if not issues:
         return []
     latest: dict[str, dict | None] = {}

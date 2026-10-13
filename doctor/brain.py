@@ -83,7 +83,7 @@ class Brain:
                 print(f"local model failed: {type(exc).__name__}: {str(exc)[:200]}")
                 out = None
             if out is None:
-                self.local_failed = True
+                self.local_failed = self.down = True
             else:
                 self.used, self.down = local.NAME, False
         elif out is None:
