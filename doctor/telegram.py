@@ -9,13 +9,13 @@ from .redact import redact
 LIMIT = 3900
 
 
-def _api(method: str, **params):
+def _api(method: str, wait: float = 40, **params):
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     if not token:
         return None
     req = urllib.request.Request(f"https://api.telegram.org/bot{token}/{method}", data=json.dumps(params).encode(),
                                  headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=40) as r:
+    with urllib.request.urlopen(req, timeout=wait) as r:
         return json.load(r)
 
 
@@ -52,8 +52,11 @@ def send(text: str) -> bool:
     return ok
 
 
-MENU = [("status", "Problems now and every channel's state"), ("digest", "The daily digest, now"),
-        ("ypp", "Road to YPP: every channel's progress to earning"), ("review", "Run the channel review now"), ("scout", "Run the tool scout now"), ("help", "What I can do")]
+MENU = [("status", "Problems now and every channel's state"), ("channel", "One channel in detail: /channel atlas"),
+        ("top", "Best uploads of the last 7 days across channels"), ("ask", "Ask anything about the channels"),
+        ("digest", "The daily digest, now"), ("ypp", "Road to YPP: every channel's progress to earning"),
+        ("review", "Run the channel review now"), ("scout", "Run the tool scout now"), ("id", "This chat's id"),
+        ("help", "What I can do")]
 
 
 def set_menu() -> bool:
@@ -64,11 +67,21 @@ def set_menu() -> bool:
         return False
 
 
-def commands(offset: int) -> tuple[list[str], int]:
-    """Owner's new bot commands since `offset`; returns (commands, next offset)."""
+def parse(text: str) -> tuple[str, str]:
+    """(command, rest) for '/cmd@Bot rest'; a plain message is ('/ask', the message)."""
+    text = (text or "").strip()
+    if not text.startswith("/"):
+        return "/ask", text
+    head, _, rest = text.partition(" ")
+    return head.split("@")[0].lower(), rest.strip()
+
+
+def messages(offset: int, wait: int = 0) -> tuple[list[tuple[str, str]], int]:
+    """The owner's new messages since `offset` as (command, rest), waiting up to `wait` s for one (long poll);
+    returns (messages, next offset). Messages from any other chat are dropped."""
     chat = str(os.environ.get("TELEGRAM_CHAT_ID", ""))
     try:
-        res = _api("getUpdates", offset=offset, timeout=0, allowed_updates=["message"])
+        res = _api("getUpdates", wait=wait + 15, offset=offset, timeout=wait, allowed_updates=["message"])
     except Exception as exc:
         print(f"telegram getUpdates failed: {type(exc).__name__}")
         return [], offset
@@ -76,6 +89,6 @@ def commands(offset: int) -> tuple[list[str], int]:
     for u in (res or {}).get("result", []):
         offset = max(offset, u["update_id"] + 1)
         msg = u.get("message") or {}
-        if str(msg.get("chat", {}).get("id")) == chat and (msg.get("text") or "").startswith("/"):
-            out.append(msg["text"].split()[0].split("@")[0].lower())
+        if str(msg.get("chat", {}).get("id")) == chat and (msg.get("text") or "").strip():
+            out.append(parse(msg["text"]))
     return out, offset
