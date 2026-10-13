@@ -49,6 +49,15 @@ def feed(gh: GitHub, channel_id: str) -> list[dict]:
     return sorted(out, key=lambda v: v["published"] or "", reverse=True)
 
 
+def never_started(gh: GitHub, repo: str, run: dict) -> bool:
+    """A failed run whose jobs ran no step at all: GitHub refused to start it (billing or spending limit)."""
+    try:
+        jobs = gh.get(f"/repos/{repo}/actions/runs/{run['id']}/jobs")["jobs"]
+    except (urllib.error.HTTPError, KeyError):
+        return False
+    return bool(jobs) and all(not j.get("steps") for j in jobs)
+
+
 def check(gh: GitHub, cfg: dict, at: datetime) -> tuple[dict[str, str], dict[str, list[str]]]:
     """Return ({problem key: message}, {channel name: status lines})."""
     problems: dict[str, str] = {}
@@ -103,7 +112,8 @@ def check(gh: GitHub, cfg: dict, at: datetime) -> tuple[dict[str, str], dict[str
                                                f"{hours(scheduled[0]['created_at'], at):.0f} h (limit {wf['max_h']} h)")
                 done = [r for r in runs if r["status"] == "completed" and r["conclusion"] != "skipped"][:STREAK]
                 if len(done) == STREAK and all(r["conclusion"] in ("failure", "timed_out") for r in done):
-                    problems[f"streak:{tag}"] = f"{ch['name']}: the last {STREAK} {tag} runs failed ({done[0]['html_url']})"
+                    why = " - blocked by GitHub billing: the jobs never started" if never_started(gh, repo, done[0]) else ""
+                    problems[f"streak:{tag}"] = f"{ch['name']}: the last {STREAK} {tag} runs failed{why} ({done[0]['html_url']})"
                 if done:
                     lines.append(f"{wf['name']}: {done[0]['conclusion']} {hours(done[0]['updated_at'], at):.1f} h ago")
             try:
