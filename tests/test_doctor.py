@@ -213,10 +213,11 @@ def test_caller_lists_watched_workflows():
     assert text.index("concurrency:") > text.index("  doctor:")
     assert "group: doctor-${{ github.event.workflow_run.path || github.event.schedule || github.event_name }}" in text
     heal_only = caller("history-last-hours-control")
-    assert '"Atlas in Numbers publisher"' in heal_only and "cron" not in heal_only
+    assert '"Atlas in Numbers publisher"' in heal_only and '"23 4' not in heal_only
+    assert "github.event.schedule == '41 14 * * *' && 'tidy' || 'improve'" in heal_only
     assert '- cron: "23 4 * * 2,5"' in text and '- cron: "41 14 * * *"' in text
     assert "github.event.schedule == '41 14 * * *' && 'growth' || 'improve'" in text
-    assert "options: [heal, improve, growth]" in text
+    assert "options: [heal, improve, growth, tidy]" in text
     assert '"41 14' not in caller("doctor-drill")
 
 

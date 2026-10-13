@@ -21,7 +21,7 @@ jobs:
   growth:
     if: inputs.mode == 'growth'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     environment: youtube
     steps:
       - uses: actions/checkout@v4
@@ -42,11 +42,59 @@ jobs:
           args=()
           if [ "$DRY" = "true" ]; then args+=(--dry); fi
           python -m doctor growth "${args[@]}"
+      - name: Growth lab experiments
+        if: always()
+        working-directory: .doctor-engine
+        env:
+          GH_TOKEN: ${{ github.token }}
+          YOUTUBE_OAUTH_JSON: ${{ secrets.YOUTUBE_OAUTH_JSON }}
+          DOCTOR_GEMINI_API_KEY: ${{ secrets.DOCTOR_GEMINI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          DRY: ${{ inputs.dry }}
+        run: |
+          args=()
+          if [ "$DRY" = "true" ]; then args+=(--dry); fi
+          python -m doctor lab "${args[@]}"
+      - name: Close alerts that are over
+        if: always()
+        working-directory: .doctor-engine
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY: ${{ inputs.dry }}
+        run: |
+          args=()
+          if [ "$DRY" = "true" ]; then args+=(--dry); fi
+          python -m doctor tidy "${args[@]}"
+
+  tidy:
+    if: inputs.mode == 'tidy'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ashivam-dot/channel-doctor
+          path: .doctor-engine
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Close alerts that are over
+        working-directory: .doctor-engine
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY: ${{ inputs.dry }}
+        run: |
+          args=()
+          if [ "$DRY" = "true" ]; then args+=(--dry); fi
+          python -m doctor tidy "${args[@]}"
 
   doctor:
-    if: inputs.mode != 'growth'
+    if: inputs.mode != 'growth' && inputs.mode != 'tidy'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
@@ -68,6 +116,7 @@ jobs:
           DOCTOR_GEMINI_API_KEY: ${{ secrets.DOCTOR_GEMINI_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          DOCTOR_LOCAL: "1"
           MODE: ${{ inputs.mode }}
           RUN_ID: ${{ inputs.run_id }}
           DRY: ${{ inputs.dry }}

@@ -20,7 +20,8 @@ REVIEW_URL = "https://raw.githubusercontent.com/ashivam-dot/channel-doctor/main/
 class Healer:
     def __init__(self, repo: str, target: Path, dry: bool = False, report_only: bool = False):
         self.cfg = config.load()
-        self.key, self.ch, self.lane = config.lane_for(self.cfg, repo)
+        self.key, self.ch, lane = config.lane_for(self.cfg, repo)
+        self.lane = dict(lane, channel=self.key)
         self.repo, self.target, self.dry = repo, target, dry
         self.can_edit = self.lane.get("mode") == "fix" and not self.ch.get("hands_off") and not report_only
         self.gh, self.brain = GitHub(), Brain()

@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import config, growth, telegram
+from . import config, growth, lab, telegram
 from .github import GitHub
 from .state import IssueState, iso, now, since
 
@@ -243,11 +243,16 @@ Never promise views or earnings.
 
 {mission}
 
+{alternatives}
+
 ## Live fleet status ({at} UTC)
 {digest}
 
 ## Uploads in the last 7 days
 {top}
+
+## Breakouts in the last 14 days (3x+ the channel's usual views)
+{breakouts}
 
 ## Last channel review ({review_at})
 {review}
@@ -272,15 +277,18 @@ def ask(question: str, ctx: dict, brain=None) -> str:
     if not question.strip():
         return "Ask me anything about the channels, e.g. \"why is Kahaani Chaos quiet?\" or \"which channel grows fastest?\""
     from .brain import Brain
-    from .mission import brief
+    from .mission import alternatives, brief
 
     brain = brain or Brain()
     if not brain.ready:
         return "I can't answer free questions yet: DOCTOR_GEMINI_API_KEY is not set for the watch."
     review = load_review()
-    prompt = ASK.format(mission=brief(3000), at=f"{ctx['at']:%Y-%m-%d %H:%M}",
+    prompt = ASK.format(mission=brief(3000), alternatives=alternatives(), at=f"{ctx['at']:%Y-%m-%d %H:%M}",
                         digest=digest(ctx["status"], ctx["problems"], ctx["at"], ctx.get("road")),
-                        top=top_text(ctx["videos"], ctx["at"], n=15), review_at=review.get("at", "none"),
+                        top=top_text(ctx["videos"], ctx["at"], n=15),
+                        breakouts="\n".join(f"- {b['channel']}: {b['title']} ({b['views']} views, {b['x']}x)"
+                                            for b in (ctx.get("breakouts") or {}).values()) or "none",
+                        review_at=review.get("at", "none"),
                         review=review_brief(review), question=question[:1000])
     res = brain.ask_json(prompt, "fast", models=6, rounds=2, pause=10)
     answer = (res or {}).get("answer") if isinstance(res, dict) else None
@@ -331,6 +339,11 @@ def main(dry: bool = False):
     alerts: dict = st.data.setdefault("alerts", {})
     videos: dict[str, list[dict]] = {}
     problems, status = check(gh, cfg, at, videos)
+    seen = st.data.setdefault("breakouts", {})
+    for msg in lab.breakouts(videos, at, seen):
+        print(msg.splitlines()[0])
+        if not dry:
+            telegram.send(msg)
     print("problems:\n  " + "\n  ".join(problems.values()) if problems else "no problems")
 
     new, remind, cleared = [], [], []
@@ -368,7 +381,7 @@ def main(dry: bool = False):
         except Exception as exc:
             print(f"road to YPP failed: {type(exc).__name__}: {exc}")
     road = st.data.get("road")
-    ctx = {"at": at, "status": status, "problems": problems, "videos": videos, "road": road}
+    ctx = {"at": at, "status": status, "problems": problems, "videos": videos, "road": road, "breakouts": seen}
     for c, rest in msgs:
         telegram.send(respond(c, rest, ctx, gh, cfg, dry))
 

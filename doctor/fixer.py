@@ -7,7 +7,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from . import config
+from . import config, mission
 from .redact import redact
 
 BOT = ["-c", "user.name=github-actions[bot]", "-c", "user.email=41898282+github-actions[bot]@users.noreply.github.com"]
@@ -82,7 +82,11 @@ Rules:
 - Each edit replaces one exact, unique snippet: `find` must appear exactly once in the file, copied verbatim with its indentation.
 - If commits since the failed run already fix the cause, set already_fixed to true and return no edits.
 - Respect the channel rules in CHANNEL.md.
+- When a dependency failed (a model, voice, picture source, feed, quota), prefer switching to its tested alternative
+  below over a workaround, and only if it keeps the channel's quality and identity; name it in the diagnosis.
 {extra}
+{alternatives}
+
 Return JSON only:
 {{"diagnosis": "one or two plain sentences on the root cause",
   "category": "code|data|config|external|unknown",
@@ -103,7 +107,8 @@ Workflow: {workflow}   Failed step(s): {steps}
 
 def ask(brain, lane: dict, workflow: str, steps: str, log: str, ctx: str, extra: str = ""):
     prompt = PROMPT.format(editable=json.dumps(lane.get("editable") or []), workflow=workflow, steps=steps,
-                           log=redact(log)[-12000:], context=ctx, extra=extra)
+                           log=redact(log)[-12000:], context=ctx, extra=extra,
+                           alternatives=mission.alternatives(lane.get("channel")))
     return brain.ask_json(prompt, "deep")
 
 

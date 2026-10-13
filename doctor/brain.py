@@ -8,6 +8,8 @@ import time
 import urllib.error
 import urllib.request
 
+from . import local
+
 BASE = "https://generativelanguage.googleapis.com/v1beta"
 NAME = re.compile(r"^models/gemini-(\d+(?:\.\d+)?)-(pro|flash|flash-lite)(-latest|-preview(?:-\d[\d-]*)?|-\d{3})?$")
 # A newer generation usually beats a bigger model of an older one, so the tier is only a bonus on the version.
@@ -44,11 +46,12 @@ class Brain:
         self._models: list[str] | None = None
         self.used: str | None = None
         self.down = False
+        self.local_failed = False
         self.dead: set[str] = set()
 
     @property
     def ready(self) -> bool:
-        return bool(self.key)
+        return bool(self.key) or local.enabled()
 
     def _req(self, url: str, body=None):
         req = urllib.request.Request(url, data=json.dumps(body).encode() if body is not None else None,
@@ -70,10 +73,26 @@ class Brain:
         return self._models
 
     def ask_json(self, prompt: str, tier: str = "deep", models: int = 10, rounds: int = 3, pause: float = 40):
+        """Gemini first; when no Gemini model answers, the local Qwen model where the job allows it."""
+        out = self._gemini(prompt, tier, models, rounds, pause) if self.key else None
+        if out is None and local.enabled() and not self.local_failed:
+            print("no Gemini answer; asking the local Qwen model")
+            try:
+                out = local.ask_json(prompt)
+            except Exception as exc:
+                print(f"local model failed: {type(exc).__name__}: {str(exc)[:200]}")
+                out = None
+            if out is None:
+                self.local_failed = True
+            else:
+                self.used, self.down = local.NAME, False
+        elif out is None:
+            self.down = True
+        return out
+
+    def _gemini(self, prompt: str, tier: str, models: int, rounds: int, pause: float):
         """Walk the ranked models; overloaded (503) or rate-limited (429) ones are retried in later rounds."""
         self.down = False
-        if not self.ready:
-            return None
         try:
             ranked = rank(self.models(), tier)[:models]
         except Exception as exc:

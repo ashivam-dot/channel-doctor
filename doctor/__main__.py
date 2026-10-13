@@ -21,7 +21,7 @@ on:
     inputs:
       mode:
         type: choice
-        options: [heal, improve, growth]
+        options: [heal, improve, growth, tidy]
         default: heal
       run_id:
         description: failed run id to heal
@@ -45,7 +45,7 @@ jobs:
       cancel-in-progress: false
     uses: ashivam-dot/channel-doctor/.github/workflows/doctor.yml@main
     with:
-      mode: ${{{{ github.event_name == 'schedule' && (github.event.schedule == '{growth_cron}' && 'growth' || 'improve') || inputs.mode || 'heal' }}}}
+      mode: ${{{{ github.event_name == 'schedule' && (github.event.schedule == '{growth_cron}' && '{daily}' || 'improve') || inputs.mode || 'heal' }}}}
       run_id: ${{{{ format('{{0}}', inputs.run_id || github.event.workflow_run.id) }}}}
       dry: ${{{{ inputs.dry == true }}}}
       report_only: ${{{{ vars.DOCTOR_MODE == 'report' }}}}
@@ -59,11 +59,12 @@ GROWTH_CRON = "41 14 * * *"  # before the 15:30 UTC digest
 
 def caller(repo: str) -> str:
     cfg = config.load()
-    _, _, lane = config.lane_for(cfg, repo)
+    _, ch, lane = config.lane_for(cfg, repo)
     names = [wf["name"] for wf in lane.get("workflows", {}).values()]
-    crons = ([IMPROVE_CRON] if lane.get("mode") == "fix" else []) + ([GROWTH_CRON] if lane.get("analytics") else [])
+    crons = ([IMPROVE_CRON] if lane.get("mode") == "fix" else []) + ([] if ch.get("drill") else [GROWTH_CRON])
     schedule = "  schedule:\n" + "".join(f'    - cron: "{c}"\n' for c in crons) if crons else ""
-    return CALLER.format(workflows=json.dumps(names), schedule=schedule, growth_cron=GROWTH_CRON)
+    return CALLER.format(workflows=json.dumps(names), schedule=schedule, growth_cron=GROWTH_CRON,
+                         daily="growth" if lane.get("analytics") else "tidy")
 
 
 def selftest() -> int:
@@ -107,9 +108,10 @@ def main():
     i.add_argument("--target", default="target")
     i.add_argument("--dry", action="store_true")
     i.add_argument("--report-only", action="store_true")
-    g = sub.add_parser("growth")
-    g.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY"))
-    g.add_argument("--dry", action="store_true")
+    for name in ("growth", "lab", "tidy"):
+        g = sub.add_parser(name)
+        g.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY"))
+        g.add_argument("--dry", action="store_true")
     for name in ("watch", "review", "scout"):
         sub.add_parser(name).add_argument("--dry", action="store_true")
     c = sub.add_parser("caller")
@@ -123,6 +125,12 @@ def main():
         healer.heal(a.run_id) if a.cmd == "heal" else healer.improve()
     elif a.cmd == "growth":
         from .growth import run_repo
+        run_repo(a.repo, a.dry)
+    elif a.cmd == "lab":
+        from .lab import run_repo
+        run_repo(a.repo, config.load(), a.dry)
+    elif a.cmd == "tidy":
+        from .tidy import run_repo
         run_repo(a.repo, a.dry)
     elif a.cmd == "watch":
         from .watch import main as run
