@@ -65,6 +65,8 @@ At most 3 focus entries, closest to earning first.
 """
 
 
+FEED_UNKNOWN = ("upload numbers unknown: YouTube's public feed could not be read in this run. This is NOT evidence "
+                "of zero uploads or a stalled channel; judge uploads only from the workflow reliability below")
 MIN_SCORED = 12  # videos with 24 h+ of views before any change may be applied automatically
 RETRY_PAUSE_S = 60  # free-tier Gemini limits are per minute
 
@@ -181,13 +183,16 @@ def main(dry: bool = False):
     for key, ch in cfg["channels"].items():
         if ch.get("drill"):
             continue
-        vids = []
+        vids, blind = [], False
         if ch.get("youtube"):
             try:
                 vids = feed(gh, ch["youtube"])
             except Exception as exc:
+                blind = True
                 print(f"{ch['name']}: feed unreadable ({type(exc).__name__})")
         table, summary = uploads_table(vids, at)
+        if blind:
+            table, summary = "(feed unreadable in this run)", FEED_UNKNOWN
         if not ch.get("youtube"):
             table, summary = "(no YouTube feed configured)", "upload numbers unknown: no public feed is configured for this channel"
         learn, rules = learnings(gh, cfg["owner"], ch)

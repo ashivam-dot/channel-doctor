@@ -3,6 +3,7 @@ Telegram gets new problems at once, reminders every 12 h, a note when they clear
 from __future__ import annotations
 
 import os
+import time
 import urllib.error
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
@@ -22,8 +23,21 @@ def hours(stamp: str, at: datetime) -> float:
     return (at - datetime.fromisoformat(stamp.replace("Z", "+00:00"))).total_seconds() / 3600
 
 
+FEED_PAUSES_S = (0, 4, 12)
+
+
 def feed(gh: GitHub, channel_id: str) -> list[dict]:
-    raw = gh.text(f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}")
+    """The channel's latest public uploads. YouTube's feed endpoint often fails for runner IPs for a while, so each
+    try asks the channel feed and then the same uploads as a playlist feed (UC... -> UU...)."""
+    urls = [f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"]
+    if channel_id.startswith("UC"):
+        urls.append(f"https://www.youtube.com/feeds/videos.xml?playlist_id=UU{channel_id[2:]}")
+    raw = None
+    for pause in FEED_PAUSES_S:
+        time.sleep(pause)
+        raw = next((r for r in (gh.text(u) for u in urls) if r and "<feed" in r), None)
+        if raw:
+            break
     if not raw:
         raise RuntimeError("feed unreadable")
     out = []
@@ -57,6 +71,10 @@ def check(gh: GitHub, cfg: dict, at: datetime) -> tuple[dict[str, str], dict[str
                 elif hours(last, at) > ch.get("quiet_h", 36):
                     problems[f"quiet:{key}"] = (f"{ch['name']}: no new public upload for {hours(last, at):.0f} h "
                                                 f"(limit {ch.get('quiet_h', 36)} h)")
+                elif len(day) < ch.get("min_24h", 0):
+                    problems[f"thin:{key}"] = (f"{ch['name']}: only {len(day)} public uploads in the last 24 h "
+                                               f"(expected at least {ch['min_24h']}): the lane is green but "
+                                               f"short of stories or refusing its own output")
                 lines.append(f"uploads 24h: {len(day)}; last {hours(last, at):.1f} h ago" if last else "no uploads")
                 if vids:
                     v = vids[0]

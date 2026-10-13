@@ -10,7 +10,8 @@
     "kyun-hua": {
       "name": "Kyun Hua",
       "youtube": "UCS-lEPHkz_dftfUjjeTuxOA",
-      "quiet_h": 18,
+      "quiet_h": 10,
+      "min_24h": 3,
       "goal": {"route": "shorts"},
       "about": "Hindi 'kyun hua' explainer Shorts about trending Indian news; timing-first (publish while a story trends); Gemini TTS Sulafat voice; real Commons photos per beat in parallax; AI-voice label.",
       "lanes": [
@@ -35,7 +36,7 @@
     "pangaea": {
       "name": "Pangaea Nights",
       "youtube": "UCtVG78IUTqvP9rH-LLies0A",
-      "quiet_h": 48,
+      "quiet_h": 30,
       "watch_from": "2026-10-11T12:00:00+00:00",
       "goal": {"route": "longform"},
       "about": "Long-form calm deep-time sleep documentaries (about 2 h), one a day, premiere 00:30 UTC; built on GitHub Actions CPU.",
@@ -61,7 +62,8 @@
     "orbitwire": {
       "name": "Orbitwire",
       "youtube": "UCfqAy1IxE2Cwu9pmZGMambA",
-      "quiet_h": 72,
+      "quiet_h": 14,
+      "min_24h": 2,
       "goal": {"route": "shorts"},
       "about": "English Shorts on the world's most famous trending stories as photo stories with depth parallax and emotional narration; strict decorum, verified facts.",
       "lanes": [
@@ -84,7 +86,8 @@
     "atlas": {
       "name": "Atlas in Numbers",
       "youtube": "UC6e6OB3iw3yp8JnnBYxLItA",
-      "quiet_h": 36,
+      "quiet_h": 20,
+      "min_24h": 2,
       "goal": {"route": "shorts"},
       "about": "Data Shorts: one dataset, one surprising contrast, photoreal globe 'cinema' format; three a day; rendered on Modal, published by the history-last-hours-control publisher.",
       "lanes": [
@@ -107,7 +110,8 @@
     "mool-katha": {
       "name": "Mool Katha",
       "youtube": "UCdqxVnoHDWXgA2ZVJWkSu8w",
-      "quiet_h": 36,
+      "quiet_h": 20,
+      "min_24h": 1,
       "goal": {"route": "shorts"},
       "about": "Hindi scripture story Shorts (Mool Katha lite lane), published through Buffer to YouTube and Instagram.",
       "lanes": [
@@ -124,7 +128,8 @@
     },
     "scam-autopsy": {
       "name": "Scam Autopsy",
-      "youtube": null,
+      "youtube": "UCz0W-lSVvEeWYufkUVaVUKA",
+      "quiet_h": 120,
       "goal": {"route": "longform"},
       "about": "Source-backed scam investigation episodes from an open-source cloud studio.",
       "lanes": [
@@ -156,7 +161,8 @@
     "universe": {
       "name": "Universe Receipts",
       "youtube": "UCal2hAu7VaZimTwaAgeBEyg",
-      "quiet_h": 36,
+      "quiet_h": 20,
+      "min_24h": 2,
       "hands_off": true,
       "goal": {"route": "shorts"},
       "about": "Space Shorts. Hands-off: watched read-only; written suggestions only, never changed.",
