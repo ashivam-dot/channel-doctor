@@ -73,7 +73,8 @@
           "analytics": true,
           "workflows": {
             "run.yml": {"name": "run", "max_h": 3},
-            "health.yml": {"name": "health", "max_h": 9, "fix": false}
+            "health.yml": {"name": "health", "max_h": 9, "fix": false},
+            "tests.yml": {"name": "tests"}
           },
           "redispatch": [],
           "apt": ["ffmpeg", "espeak-ng"],
