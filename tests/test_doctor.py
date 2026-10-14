@@ -24,7 +24,8 @@ def test_channels_json_is_consistent():
         if lane["mode"] == "fix":
             assert lane.get("test") and lane.get("editable"), key
         assert not (ch.get("hands_off") and lane["mode"] == "fix")
-    assert cfg["channels"]["universe"]["hands_off"] and not cfg["channels"]["universe"]["lanes"]
+    universe = cfg["channels"]["universe"]
+    assert universe["hands_off"] and "lab" not in universe and all(l["mode"] == "watch" for l in universe["lanes"])
 
 
 @pytest.mark.parametrize("path,ok", [

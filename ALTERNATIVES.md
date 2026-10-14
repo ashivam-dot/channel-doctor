@@ -74,4 +74,9 @@ still fails is skipped (no new script), and the health check alerts only when th
 
 ## universe
 
-Hands-off. Watch and report only; never change its repo, automation or channel.
+Hands-off for content: never change its scripts, uploads, titles or channel; watch and report only (no lab, no
+caller). Studio: Modal runs it four times a day; the repo's `studio.yml` is the backup when Modal's last run failed
+or is over 8 h old, and `watchdog.yml` checks Modal, Buffer, Cloudinary and the feed every 3 h. Billing: the repo
+was made public on 2026-10-14 (the phone number scrubbed from history first) because its private Actions minutes
+had stopped on GitHub billing; public repos run free, so billing is never the fix. If Modal's credit runs out, the
+backup studio on GitHub takes over by itself.
