@@ -90,8 +90,9 @@ class Healer:
 
         if kind == "billing":
             notify = None if self.recent(fp, {"escalated"}, 12) else "NEEDS YOU"
-            return self.finish(rec, "escalated", "GitHub billing is blocking this repo's Actions. Only you can fix "
-                               "it: github.com/settings/billing.", notify, url)
+            return self.finish(rec, "escalated", "GitHub billing is blocking this repo's Actions. Free fix, no "
+                               "payment: the agent makes the repo public after a history scan for "
+                               "secrets and personal data (ALTERNATIVES.md, GitHub Actions).", notify, url)
         if kind == "auth":
             notify = None if self.recent(fp, {"escalated"}, 12) else "NEEDS YOU"
             return self.finish(rec, "escalated", f"A credential was rejected, so a re-login or new key is needed:\n{evidence}",

@@ -25,8 +25,10 @@ quality, hold the publish and alert instead: a late Short costs less than a weak
 - **YouTube feeds** (watch): channel feed -> uploads playlist feed (UC.. -> UU..) -> retry with pauses.
 - **News and story sources.** Many feeds per lane (`outlets.py`); a 403 on GitHub runners (Indian Express) is a
   runner-IP block, not an outage. Wire copy counts as one owner. A refused source is skipped, never forced through.
-- **GitHub Actions.** Public repos have free minutes; private repos stop when billing fails (only the owner can fix
-  it: github.com/settings/billing). Transient runner errors are re-run up to 3 attempts. "No space left on device":
+- **GitHub Actions.** Public repos have free minutes; private repos stop when billing fails. Never ask the owner to
+  pay: the free fix is to make the repo public after scanning its whole history for credentials and personal data
+  and scrubbing any with git-filter-repo (done for universe-receipts on 2026-10-14). Every active channel repo is
+  public. Transient runner errors are re-run up to 3 attempts. "No space left on device":
   delete caches or model files before the next download, never skip a quality step.
 - **Credentials.** `invalid_grant` or a revoked token needs the owner to sign in again; the doctor never reads,
   copies or prints secrets.
