@@ -60,6 +60,8 @@ GROWTH_CRON = "41 14 * * *"  # before the 15:30 UTC digest
 def caller(repo: str) -> str:
     cfg = config.load()
     _, ch, lane = config.lane_for(cfg, repo)
+    if lane.get("mode") == "watch":
+        raise SystemExit(f"{repo} is watched centrally only; it gets no doctor caller")
     names = [wf["name"] for wf in lane.get("workflows", {}).values()]
     crons = ([IMPROVE_CRON] if lane.get("mode") == "fix" else []) + ([] if ch.get("drill") else [GROWTH_CRON])
     schedule = "  schedule:\n" + "".join(f'    - cron: "{c}"\n' for c in crons) if crons else ""

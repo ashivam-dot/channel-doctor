@@ -20,12 +20,14 @@ def test_channels_json_is_consistent():
     repos = [lane["repo"] for _, _, lane in config.lanes(cfg)]
     assert len(repos) == len(set(repos))
     for key, ch, lane in config.lanes(cfg):
-        assert lane["mode"] in ("fix", "heal")
+        assert lane["mode"] in ("fix", "heal", "watch")
         if lane["mode"] == "fix":
             assert lane.get("test") and lane.get("editable"), key
         assert not (ch.get("hands_off") and lane["mode"] == "fix")
     universe = cfg["channels"]["universe"]
     assert universe["hands_off"] and "lab" not in universe and all(l["mode"] == "watch" for l in universe["lanes"])
+    with pytest.raises(SystemExit):
+        caller("universe-receipts")
 
 
 @pytest.mark.parametrize("path,ok", [
