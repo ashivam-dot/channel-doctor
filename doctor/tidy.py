@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 
 from . import config
 from .github import GitHub
-from .watch import feed, hours, silence
+from .watch import code_changed, feed, hours, symptom
 
 QUIET_H = 6
 RUN_FAILED = re.compile(r"\bfailed\b", re.I)
@@ -70,7 +70,7 @@ def silent_run(gh: GitHub, repo: str, lane: dict, ch: dict, at: datetime) -> tup
     if not producer:
         return None
     try:
-        gap = silence(ch, feed(gh, ch["youtube"]), at)
+        gap = symptom(ch, feed(gh, ch["youtube"]), at, code_changed(gh, repo, lane))
     except RuntimeError:
         return None
     if not gap:

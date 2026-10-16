@@ -128,12 +128,15 @@
         },
         {
           "repo": "creature-receipts",
-          "mode": "heal",
+          "mode": "fix",
           "workflows": {
             "watchdog.yml": {"name": "watchdog"},
             "scout.yml": {"name": "scout"},
             "studio.yml": {"name": "studio"}
-          }
+          },
+          "redispatch": [],
+          "test": "cd pipeline && uv sync --frozen && uv run pytest -q tests -k 'atlas or cinema or film'",
+          "editable": ["pipeline/src/ytc/atlas/**/*.py"]
         }
       ]
     },
@@ -165,11 +168,15 @@
       "lanes": [
         {
           "repo": "scam-autopsy",
-          "mode": "heal",
+          "mode": "fix",
           "workflows": {
             "studio.yml": {"name": "Scam Autopsy cloud studio", "max_h": 100},
             "insights.yml": {"name": "Analytics and source research", "max_h": 30}
-          }
+          },
+          "redispatch": [],
+          "apt": ["ffmpeg", "espeak-ng", "fonts-dejavu-core", "libsndfile1"],
+          "test": "uv sync --locked --extra test && uv run pytest -q",
+          "editable": ["scam_autopsy/**/*.py"]
         }
       ]
     },

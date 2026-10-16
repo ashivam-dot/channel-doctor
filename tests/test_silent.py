@@ -1,4 +1,5 @@
 from datetime import timedelta
+from pathlib import Path
 
 from doctor import heal, state, watch
 
@@ -21,6 +22,7 @@ class GH:
 def healer(gh, can_edit):
     h = heal.Healer.__new__(heal.Healer)
     h.repo, h.dry, h.gh, h.can_edit, h.events, h.fixes = "o/r", True, gh, can_edit, [], []
+    h.target, h.brain = Path("."), type("B", (), {"ready": False})()
     h.ch = {"name": "C", "youtube": "UCx", "quiet_h": 10}
     h.lane = {"mode": "fix", "max_fixes_per_day": 2, "workflows": {"run.yml": {"name": "run", "max_h": 3}}}
     h.finished, h.attempted = [], []

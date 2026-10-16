@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 import urllib.error
+import urllib.parse
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
@@ -67,6 +69,70 @@ def silence(ch: dict, vids: list[dict], at: datetime) -> tuple[str, str] | None:
     return None
 
 
+QA_HOURS = 72
+SMALL = {"a", "an", "and", "as", "at", "but", "by", "for", "from", "in", "into", "of", "on", "or", "per", "the", "to",
+         "vs", "via", "with", "than", "over", "under", "after", "before"}
+LEFTOVER = re.compile(r"\b(?:None|null|undefined|NaN|TODO|TBD|lorem ipsum)\b|\{[a-z_]*\}|\\n|\s{2,}")
+
+
+def title_problems(title: str) -> list[str]:
+    """Defects a viewer would see in an uploaded title (Latin-script titles only)."""
+    out = []
+    t = (title or "").replace(" #shorts", "").strip()
+    if not t:
+        return ["empty title"]
+    if LEFTOVER.search(t):
+        out.append(f"template leftover {LEFTOVER.search(t).group(0)!r}")
+    if t[0].isalpha() and t[0].islower():
+        out.append("starts in lower case")
+    words = [m.group(0) for m in re.finditer(r"[A-Za-z][A-Za-z'-]*", t)
+             if m.start() > 0 and len(m.group(0)) > 3 and m.group(0).lower() not in SMALL]
+    caps = [w for w in words if w[0].isupper()]
+    lows = [w for w in words if w[0].islower()]
+    if len(caps) >= 3 and len(lows) == 1:
+        out.append(f"one word in lower case among title-case words ({lows[0]!r})")
+    tokens = [w.strip(".,:;!?|\"'()").casefold() for w in t.split()]
+    if dup := next((t.split()[i] for i in range(1, len(tokens)) if tokens[i] and tokens[i] == tokens[i - 1]), None):
+        out.append(f"repeated word {dup!r}")
+    return out
+
+
+def code_changed(gh: GitHub, repo: str, lane: dict) -> str | None:
+    """When the lane's editable code last changed on the default branch, or None (nothing editable, or unknown)."""
+    dates = []
+    for glob in lane.get("editable", []):
+        path = glob.split("*", 1)[0].rstrip("/")
+        try:
+            commits = gh.get(f"/repos/{repo}/commits?" + urllib.parse.urlencode({"path": path, "per_page": 1}))
+            dates.append(commits[0]["commit"]["committer"]["date"])
+        except Exception:
+            continue
+    return max(dates) if dates else None
+
+
+def quality(ch: dict, vids: list[dict], at: datetime, fixed_at: str | None = None) -> str | None:
+    """What is visibly wrong with the channel's uploads of the last QA_HOURS (titles, duplicates), or None.
+    Uploads from before `fixed_at` (the producing code's last change) are skipped: that code is already different."""
+    recent = [v for v in vids if v.get("published") and hours(v["published"], at) <= QA_HOURS
+              and not (fixed_at and hours(v["published"], at) > hours(fixed_at, at))]
+    found = [f"\"{v['title']}\": {p}" for v in recent for p in title_problems(v["title"])]
+    seen: dict[str, int] = {}
+    for v in recent:
+        key = re.sub(r"\W+", " ", (v["title"] or "").lower()).strip()
+        seen[key] = seen.get(key, 0) + 1
+    found += [f"\"{k}\" was uploaded {n} times" for k, n in seen.items() if k and n > 1]
+    return f"{ch['name']}: uploads with visible defects: " + "; ".join(found)[:600] if found else None
+
+
+def symptom(ch: dict, vids: list[dict], at: datetime, fixed_at: str | None = None) -> tuple[str, str] | None:
+    """The channel's most urgent green-run problem: silence first, then visible defects in recent uploads."""
+    if gap := silence(ch, vids, at):
+        return gap
+    if not ch.get("hands_off") and (bad := quality(ch, vids, at, fixed_at)):
+        return "qa", bad
+    return None
+
+
 def never_started(gh: GitHub, repo: str, run: dict) -> bool:
     """A failed run whose jobs ran no step at all: GitHub refused to start it (billing or spending limit)."""
     try:
@@ -96,7 +162,7 @@ def check(gh: GitHub, cfg: dict, at: datetime,
                 day = [v for v in vids if v["published"] and hours(v["published"], at) <= 24]
                 if ch.get("watch_from") and at < datetime.fromisoformat(ch["watch_from"]):
                     lines.append(f"upload watch starts {ch['watch_from'][:16]} UTC")
-                elif gap := silence(ch, vids, at):
+                elif gap := symptom(ch, vids, at):
                     problems[f"{gap[0]}:{key}"] = gap[1]
                 lines.append(f"uploads 24h: {len(day)}; last {hours(last, at):.1f} h ago" if last else "no uploads")
                 if vids:

@@ -22,11 +22,26 @@ def git(root: Path, *args: str, check: bool = True) -> str:
     return r.stdout.strip()
 
 
+def in_repo(path: str, root: Path) -> str | None:
+    """The repo-relative path a log's file path points at. A traceback names the failed run's checkout
+    (/home/runner/work/<repo>/<repo>/pkg/x.py), which is not where the doctor's checkout lives, so the longest
+    tail of the path that exists in root wins."""
+    if "/site-packages/" in path:
+        path = path.split("/site-packages/")[-1]
+    elif ".venv" in path:
+        return None
+    parts = Path(path).parts
+    for i in range(len(parts)):
+        rel = Path(*parts[i:])
+        if not rel.is_absolute() and (root / rel).is_file():
+            return rel.as_posix()
+    return None
+
+
 def referenced(log: str, root: Path) -> dict[str, list[int]]:
     refs: dict[str, list[int]] = {}
     for path, line in TRACE.findall(log) + PYTEST.findall(log):
-        rel = path.split("/site-packages/")[-1] if "site-packages" in path else path
-        if (root / rel).is_file() and ".venv" not in rel:
+        if rel := in_repo(path, root):
             refs.setdefault(rel, []).append(int(line))
     return refs
 

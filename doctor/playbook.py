@@ -26,14 +26,61 @@ def clean(log: str) -> str:
     return "\n".join(ANSI.sub("", TIMESTAMP.sub("", line)) for line in log.splitlines())
 
 
+# Runner housekeeping that follows every job. Read as evidence it made all 19 failures in the doctor logs "unknown"
+# ("Cleaning up orphan processes", the Node.js 20 notice) and hid the real error printed above it.
+NOISE = re.compile(r"^(?:Post job cleanup\.?|Cleaning up orphan processes|\[command\]/usr/bin/git\b|Temporarily overriding HOME|"
+                   r"Adding repository directory|http\.https://github\.com/\.extraheader|##\[warning\]Node\.js 20 is deprecated|"
+                   r"(?:UV_CACHE_DIR|UV_PYTHON_INSTALL_DIR) is already set|Cache (?:hit occurred|saved|restored|not found)|"
+                   r"Copying '/home/runner/|Entering '|git version \d|Evaluate and set environment url|Uploaded bytes \d)")
+STEP_ERROR = re.compile(r"^##\[error\]")
+
+
+def without_env(lines: list[str]) -> list[str]:
+    """Each step's command line kept, the shell/env listing GitHub prints under it dropped."""
+    out, skipping = [], False
+    for line in lines:
+        if line.startswith("##[group]"):
+            skipping = True
+            if line.startswith("##[group]Run "):
+                out.append(line.replace("##[group]", "", 1))
+        elif line == "##[endgroup]":
+            skipping = False
+        elif not skipping:
+            out.append(line)
+    return out
+
+
 def tail(log: str, n: int = 250) -> str:
-    lines = [l for l in clean(log).splitlines() if l.strip() and not l.startswith("##[group]") and l != "##[endgroup]"]
+    lines = [l for l in without_env(clean(log).splitlines()) if l.strip() and not NOISE.search(l)]
     return "\n".join(lines[-n:])
+
+
+def failure_region(log: str, n: int = 150) -> str:
+    """What each failing step printed (its command line, then its output up to its ##[error] line), without the
+    step's env listing or runner housekeeping; "" when the log marks no step error."""
+    lines = clean(log).splitlines()
+    out: list[str] = []
+    for i, line in enumerate(lines):
+        if not STEP_ERROR.match(line):
+            continue
+        start = next((j for j in range(i - 1, -1, -1) if lines[j].startswith("##[group]Run ")), max(0, i - n))
+        seg = lines[start:i + 1]
+        if seg[0].startswith("##[group]Run "):
+            end = next((k for k, s in enumerate(seg) if s == "##[endgroup]"), 0)
+            seg = [seg[0].replace("##[group]", "", 1)] + seg[end + 1:]
+        out += [s for s in seg if s.strip() and not NOISE.search(s) and s != "##[endgroup]"][-n:]
+    return "\n".join(out[-2 * n:])
+
+
+def excerpt(log: str, n: int = 300) -> str:
+    """The part of a job log worth reading: the failing steps' output, else the log's tail."""
+    region = failure_region(log, n // 2)
+    return region + "\n--- end of the job ---\n" + tail(log, 25) if region else tail(log, n)
 
 
 def classify(log: str, conclusion: str = "failure") -> tuple[str, str]:
     """Return (kind, evidence line). Kinds: billing, auth, quota, transient, unknown."""
-    region = tail(log, 160)
+    region = failure_region(log) or tail(log, 160)
     for kind, pattern in RULES:
         hits = [l for l in region.splitlines() if re.search(pattern, l, re.I)]
         if hits:
@@ -44,9 +91,16 @@ def classify(log: str, conclusion: str = "failure") -> tuple[str, str]:
 
 
 def first_error(log: str) -> str:
-    lines = tail(log, 200).splitlines()
-    picked = [l for l in lines if ERRORISH.search(l) and "exit code" not in l]
-    return (picked[-1] if picked else (lines[-1] if lines else "")).strip()[:300]
+    lines = (failure_region(log) or tail(log, 200)).splitlines()
+    told = [l for l in lines if not STEP_ERROR.match(l) and re.search(r"[A-Za-z]{3}", l)]
+    picked = ([l for l in told if ERRORISH.search(l) and "exit code" not in l]
+              or [l for l in told if REASON.search(l)] or [l for l in told if TELLING.search(l)])
+    return (picked[-1] if picked else told[-1] if told else lines[-1] if lines else "").strip()[:300]
+
+
+REASON = re.compile(r"[\"']?\b(?:reason|error|why|held|problems?|refusals?)[\"']?\s*[:=]", re.I)
+TELLING = re.compile(r"\b(?:fail\w*|refus\w*|held|hold|reason|unavailable|missing|denied|invalid|not found|cannot|"
+                     r"unable|needs?_?attention|no \w+ (?:for|in|passed))\b", re.I)
 
 
 def fingerprint(workflow: str, evidence: str) -> str:
