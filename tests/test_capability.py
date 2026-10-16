@@ -91,6 +91,17 @@ def test_quality_looks_at_recent_uploads_and_duplicates_only():
     assert "lower case" in watch.quality(ch, [vid("places Where X Is", 1)], AT, fixed_since)
 
 
+def test_two_new_uploads_far_below_the_usual_are_a_slump_until_the_code_changes():
+    old = [dict(vid(f"Story {i}", 50 + 10 * i), views=300 + i) for i in range(6)]
+    quakes = [dict(vid("M6.8 ridge quake", 14), views=5), dict(vid("M6.9 quake", 16), views=2)]
+    assert "5 and 2 views against the usual 302" in watch.slump(quakes + old, AT)
+    assert "5 and 2 views" in watch.quality({"name": "Orbitwire"}, quakes + old, AT)
+    assert watch.slump([dict(quakes[0], views=200), quakes[1]] + old, AT) is None
+    assert watch.slump([dict(q, published=(AT - timedelta(hours=3)).isoformat()) for q in quakes] + old, AT) is None
+    assert watch.slump(quakes + [dict(v, views=40) for v in old], AT) is None
+    assert watch.slump(quakes + old, AT, (AT - timedelta(hours=1)).isoformat()) is None
+
+
 def test_the_producing_codes_last_change_is_the_newest_editable_commit():
     class Commits:
         def get(self, path, **params):

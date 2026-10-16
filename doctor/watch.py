@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import statistics
 import time
 import urllib.error
 import urllib.parse
@@ -121,7 +122,31 @@ def quality(ch: dict, vids: list[dict], at: datetime, fixed_at: str | None = Non
         key = re.sub(r"\W+", " ", (v["title"] or "").lower()).strip()
         seen[key] = seen.get(key, 0) + 1
     found += [f"\"{k}\" was uploaded {n} times" for k, n in seen.items() if k and n > 1]
+    if fell := slump(vids, at, fixed_at):
+        found.append(fell)
     return f"{ch['name']}: uploads with visible defects: " + "; ".join(found)[:600] if found else None
+
+
+SLUMP_SHARE, SLUMP_MIN_USUAL, SLUMP_AGE_H = 0.1, 100, (12, 72)
+
+
+def slump(vids: list[dict], at: datetime, fixed_at: str | None = None) -> str | None:
+    """Viewers refusing what the channel now makes: its two newest uploads, both SLUMP_AGE_H old, under SLUMP_SHARE
+    of the usual (median of uploads 48 h+ old, at least SLUMP_MIN_USUAL). Orbitwire's first two Shorts after a
+    format change (2026-10-16) had 5 and 2 views against the usual 300: the change, not the topic, is the suspect."""
+    dated = sorted((v for v in vids if v.get("published") and v.get("views") is not None),
+                   key=lambda v: v["published"], reverse=True)
+    settled = [v["views"] for v in dated if hours(v["published"], at) >= 48]
+    if len(settled) < 6 or (usual := statistics.median(settled)) < SLUMP_MIN_USUAL or len(dated) < 2:
+        return None
+    newest = dated[:2]
+    if fixed_at and hours(newest[0]["published"], at) > hours(fixed_at, at):
+        return None
+    lo, hi = SLUMP_AGE_H
+    if all(lo <= hours(v["published"], at) <= hi and v["views"] < SLUMP_SHARE * usual for v in newest):
+        return (f"the 2 newest uploads have {newest[0]['views']} and {newest[1]['views']} views against the usual "
+                f"{usual:,.0f}: check what the producing code changed just before them and undo it if it is the cause")
+    return None
 
 
 def symptom(ch: dict, vids: list[dict], at: datetime, fixed_at: str | None = None) -> tuple[str, str] | None:
