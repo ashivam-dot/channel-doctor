@@ -43,8 +43,10 @@ stories while they trend; a story past its moment is dropped, never published la
 ## orbitwire
 
 World news in 3D/photo stories (rebuilt-in-3d). Writer: local Gemma 4 12B (`STUDIO_LLM`) -> Qwen3.5-35B-A3B. Voices:
-`india.wav` / `world.wav` Chatterbox clones. Photos from Commons; quakes keep the 3D terrain lane. Every name and
-number must be in the source article plus a second fact-check pass.
+`india.wav` / `world.wav` Chatterbox clones. Photos from Commons; quakes keep the 3D terrain lane. An incident that
+failed the photo gate once is retold over a 3D terrain reconstruction of its location (`cli.in_3d`,
+`writer.build_incident(views=True)`), labelled "not real footage"; never a death or an nw- story. Every name and
+number must be in the source article plus a second fact-check pass; a toll that counts the attacker is never said.
 
 ## kahaani-chaos
 
