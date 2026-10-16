@@ -99,6 +99,9 @@ class Healer:
         rec = {"at": iso(), "run": int(run_id), "attempt": run["run_attempt"], "workflow": wf_name, "fp": fp,
                "kind": kind, "evidence": evidence[:200]}
         print(f"{wf_name} run {run_id} attempt {run['run_attempt']}: {kind} | {evidence}")
+        if kind == "unknown" and SILENT.search(evidence) and (newest := self.published_after(run)):
+            return self.finish(rec, "recovered", f"{wf_name} failed on silence ({evidence}), but the channel has "
+                               f"published since (\"{newest}\"); nothing to do.", None, url)
 
         if kind == "billing":
             notify = None if self.recent(fp, {"escalated"}, 12) else "NEEDS YOU"
@@ -170,6 +173,18 @@ class Healer:
                                  watch.code_changed(self.gh, self.repo, self.lane))
         except RuntimeError:
             return None
+
+    def published_after(self, run: dict) -> str | None:
+        """Title of the channel's newest upload when it went public after `run` started, else None."""
+        if not self.ch.get("youtube") or not run.get("created_at"):
+            return None
+        try:
+            vids = watch.feed(self.gh, self.ch["youtube"])
+        except RuntimeError:
+            return None
+        at = now()
+        newest = next((v for v in vids if v.get("published")), None)
+        return newest["title"] if newest and watch.hours(newest["published"], at) < watch.hours(run["created_at"], at) else None
 
     def producer(self) -> str | None:
         return next((wf for wf, w in self.lane.get("workflows", {}).items() if w.get("max_h")), None)

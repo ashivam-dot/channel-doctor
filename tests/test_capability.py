@@ -105,7 +105,8 @@ class GH:
     def __init__(self):
         self.runs = {
             "41": {"id": 41, "html_url": "h", "name": "health", "path": ".github/workflows/health.yml", "run_attempt": 1,
-                   "conclusion": "failure", "head_branch": "main", "head_sha": "abc"},
+                   "conclusion": "failure", "head_branch": "main", "head_sha": "abc",
+                   "created_at": state.iso(state.now() - timedelta(hours=5))},
         }
 
     def get(self, path, **params):
@@ -126,17 +127,34 @@ class GH:
         return {"default_branch": "main"}
 
 
-def test_a_health_check_failing_on_silence_heals_the_producer_instead(monkeypatch, tmp_path):
-    monkeypatch.setattr(watch, "feed", lambda gh, cid: [{"published": state.iso(state.now() - timedelta(hours=34)),
-                                                         "title": "T", "views": 1}])
+def health_healer(tmp_path):
     h = heal.Healer.__new__(heal.Healer)
     h.repo, h.dry, h.gh, h.can_edit, h.events, h.fixes, h.target = "o/r", True, GH(), True, [], [], tmp_path
     h.ch = {"name": "C", "youtube": "UCx", "quiet_h": 30}
     h.lane = {"mode": "fix", "max_fixes_per_day": 2, "workflows": {"run.yml": {"name": "run", "max_h": 3},
                                                                   "health.yml": {"name": "health", "max_h": 9}}}
     h.brain = type("B", (), {"ready": False})()
+    return h
+
+
+def test_a_health_check_failing_on_silence_heals_the_producer_instead(monkeypatch, tmp_path):
+    monkeypatch.setattr(watch, "feed", lambda gh, cid: [{"published": state.iso(state.now() - timedelta(hours=34)),
+                                                         "title": "T", "views": 1}])
+    h = health_healer(tmp_path)
     healed = []
     h.attempt = lambda rec, wf_name, wf_file, steps, log, task, url, default: healed.append((rec, wf_file, log))
     h.heal("41")
     (rec, wf_file, log), = healed
     assert rec["run"] == 8 and rec["kind"] == "silent" and wf_file == "run.yml" and "usable photos" in log
+
+
+def test_a_silence_alert_the_channel_has_since_answered_is_closed_without_bothering_the_owner(monkeypatch, tmp_path):
+    monkeypatch.setattr(watch, "feed", lambda gh, cid: [{"published": state.iso(state.now() - timedelta(hours=1)),
+                                                         "title": "Fall Asleep in the Coal Forests", "views": 1}])
+    h = health_healer(tmp_path)
+    done = []
+    h.finish = lambda rec, action, msg, notify, url="": done.append((action, msg, notify))
+    h.attempt = lambda *a: done.append(("attempt",))
+    h.heal("41")
+    (action, msg, notify), = done
+    assert action == "recovered" and notify is None and "Coal Forests" in msg
