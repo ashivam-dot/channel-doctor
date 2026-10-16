@@ -122,9 +122,43 @@ def quality(ch: dict, vids: list[dict], at: datetime, fixed_at: str | None = Non
         key = re.sub(r"\W+", " ", (v["title"] or "").lower()).strip()
         seen[key] = seen.get(key, 0) + 1
     found += [f"\"{k}\" was uploaded {n} times" for k, n in seen.items() if k and n > 1]
+    found += retold(recent, vids, at)
     if fell := slump(vids, at, fixed_at):
         found.append(fell)
     return f"{ch['name']}: uploads with visible defects: " + "; ".join(found)[:600] if found else None
+
+
+REPEAT_DAYS = 7
+
+
+def story_words(title: str) -> set[str]:
+    """A Latin-script title's distinctive words, numbers included ("M6.0" and "M6.6" are two quakes); empty for
+    other scripts, whose words this split cannot tell apart."""
+    t = (title or "").replace(" #shorts", "")
+    if not t.isascii():
+        return set()
+    return {w.strip(".,:;!?'-") for w in re.findall(r"\w[\w.'-]*", t.casefold())
+            if len(w) > 3 and w not in SMALL and w not in {"what", "happened", "story"}}
+
+
+def retold(recent: list[dict], vids: list[dict], at: datetime) -> list[str]:
+    """Recent uploads that retell an earlier one of the last REPEAT_DAYS under another title: one title's distinctive
+    words all in the other's. Orbitwire told the Oct 6 Saudi airport attacks twice ('The October 2026 Attacks on
+    Saudi Airports', then '...Houthi Attacks on Saudi Arabian Airports') after Wikipedia renamed the article."""
+    out = []
+    for v in recent:
+        mine = story_words(v["title"])
+        for o in vids:
+            if o is v or not o.get("published") or o["published"] >= v["published"] \
+                    or hours(o["published"], at) > REPEAT_DAYS * 24:
+                continue
+            if re.sub(r"\W+", " ", v["title"].lower()).strip() == re.sub(r"\W+", " ", o["title"].lower()).strip():
+                continue  # the same title twice is reported as uploaded twice
+            theirs = story_words(o["title"])
+            if min(len(mine), len(theirs)) >= 3 and (mine <= theirs or theirs <= mine):
+                out.append(f"\"{v['title']}\" retells \"{o['title']}\" ({o['published'][:10]})")
+                break
+    return out
 
 
 SLUMP_SHARE, SLUMP_MIN_USUAL, SLUMP_AGE_H = 0.1, 100, (12, 72)

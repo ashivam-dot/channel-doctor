@@ -91,6 +91,20 @@ def test_quality_looks_at_recent_uploads_and_duplicates_only():
     assert "lower case" in watch.quality(ch, [vid("places Where X Is", 1)], AT, fixed_since)
 
 
+def test_a_story_retold_under_another_title_is_caught():
+    ch = {"name": "Orbitwire"}
+    saudi = [vid("The October 2026 Houthi Attacks on Saudi Arabian Airports #shorts", 1),
+             vid("The October 2026 Attacks on Saudi Airports #shorts", 66)]
+    assert "retells \"The October 2026 Attacks on Saudi Airports" in watch.quality(ch, saudi, AT)
+    quakes = [vid("How the M6.6 Panama quake ruptured, in 3D", 2), vid("How the M6.0 Panama quake ruptured, in 3D", 9)]
+    assert watch.quality(ch, quakes, AT) is None
+    parts = [vid("Part 2: The Sit-in That Ended With a Resignation", 2), vid("Part 1: The Rise of the Party", 9)]
+    assert watch.quality(ch, parts, AT) is None
+    assert watch.quality(ch, [saudi[0], dict(saudi[1], published=(AT - timedelta(days=9)).isoformat())], AT) is None
+    hindi = [vid("एलोन मस्क की कंपनी टेस्ला ने पेश की नई रोडस्टर", 1), vid("एलोन मस्क की कंपनी टेस्ला", 5)]
+    assert watch.quality({"name": "Kyun Hua"}, hindi, AT) is None
+
+
 def test_two_new_uploads_far_below_the_usual_are_a_slump_until_the_code_changes():
     old = [dict(vid(f"Story {i}", 50 + 10 * i), views=300 + i) for i in range(6)]
     quakes = [dict(vid("M6.8 ridge quake", 14), views=5), dict(vid("M6.9 quake", 16), views=2)]
