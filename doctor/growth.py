@@ -111,6 +111,17 @@ def analytics(raw_credential: str, today: date | None = None) -> dict:
     out.setdefault("shorts_views_90d", 0)
     out.setdefault("long_hours_365d", 0.0)
     out["through"] = str(end)
+    # Per upload, 28 days: [video, views, engaged views, average % viewed, average seconds, subscribers gained].
+    # Engaged views / views is the closest API proxy for Studio's "viewed vs swiped away".
+    q = {"ids": "channel==MINE", "startDate": str(end - timedelta(days=27)), "endDate": str(end),
+         "metrics": "views,engagedViews,averageViewPercentage,averageViewDuration,subscribersGained",
+         "dimensions": "video", "sort": "-views", "maxResults": 25}
+    try:
+        per = _json("https://youtubeanalytics.googleapis.com/v2/reports?" + urllib.parse.urlencode(q), token=token)
+        out["per_video"] = [[v, int(n), int(e), round(float(p), 1), round(float(d)), int(s)]
+                            for v, n, e, p, d, s in per.get("rows") or []]
+    except (urllib.error.HTTPError, ValueError) as e:
+        out["per_video_error"] = f"{getattr(e, 'code', type(e).__name__)}"
     return out
 
 
