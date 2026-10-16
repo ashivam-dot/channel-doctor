@@ -6,11 +6,11 @@ import json
 import urllib.error
 from pathlib import Path
 
-from . import config, fixer, mission, telegram
+from . import config, fixer, mission, telegram, watch
 from .brain import Brain
 from .github import GitHub
 from .playbook import classify, fingerprint, tail
-from .state import IssueState, iso, since
+from .state import IssueState, iso, now, since
 
 INTRO = ("Channel Doctor's log for this repo: every failure it looked at, what it did, and any fix it pushed. "
          "Set the repository variable `DOCTOR_PAUSED=true` to stop it, `DOCTOR_MODE=report` to stop code changes.")
@@ -62,7 +62,8 @@ class Healer:
         url, wf_name = run["html_url"], run["name"]
         wf_file = run["path"].split("/")[-1].split("@")[0]
         wf_cfg = self.lane.get("workflows", {}).get(wf_file, {})
-        if run["conclusion"] not in ("failure", "timed_out"):
+        gap = self.silent() if run["conclusion"] == "success" and wf_cfg.get("max_h") else None
+        if run["conclusion"] not in ("failure", "timed_out") and not gap:
             print(f"run {run_id} concluded {run['conclusion']}; nothing to heal")
             return
         if run["head_branch"] != default:
@@ -71,6 +72,9 @@ class Healer:
         if any(e.get("run") == int(run_id) and e.get("attempt") == run["run_attempt"] for e in self.events):
             print("this attempt was already handled")
             return
+
+        if gap:
+            return self.heal_silent(run, gap, wf_name, wf_file, url, default)
 
         jobs = gh.get(f"/repos/{repo}/actions/runs/{run_id}/jobs", filter="latest", per_page=50)["jobs"]
         failed = [j for j in jobs if j["conclusion"] in ("failure", "timed_out", "cancelled")]
@@ -146,6 +150,45 @@ class Healer:
             return self.finish(rec, "escalated", msg + f"(No code change: {why}.)", notify, url)
 
         self.attempt(rec, wf_name, wf_file, steps, log, extra, url, default)
+
+    # ---- green run, silent channel -------------------------------------------------------------------------
+    def silent(self) -> str | None:
+        """Why the channel counts as silent right now (no upload past its limit, or too few today), else None."""
+        if not self.ch.get("youtube") or self.ch.get("hands_off"):
+            return None
+        try:
+            gap = watch.silence(self.ch, watch.feed(self.gh, self.ch["youtube"]), now())
+        except RuntimeError:
+            return None
+        return gap[1] if gap else None
+
+    def heal_silent(self, run, gap, wf_name, wf_file, url, default):
+        jobs = self.gh.get(f"/repos/{self.repo}/actions/runs/{run['id']}/jobs", filter="latest", per_page=50)["jobs"]
+        log = ""
+        for j in jobs[:2]:
+            try:
+                log += f"\n### job: {j['name']}\n" + tail(str(self.gh.get(f"/repos/{self.repo}/actions/jobs/{j['id']}/logs")), 300)
+            except Exception as exc:
+                log += f"\n### job: {j['name']}\n(log unavailable: {type(exc).__name__})"
+        fp = fingerprint(wf_name, "silent")
+        rec = {"at": iso(), "run": int(run["id"]), "attempt": run["run_attempt"], "workflow": wf_name, "fp": fp,
+               "kind": "silent", "evidence": gap[:200]}
+        print(f"{wf_name} run {run['id']} succeeded but {gap}")
+        task = (f"- This run SUCCEEDED, yet the channel is silent: {gap}.\n  Find in the log why it made or published "
+                "nothing (skips, holds, gates, an empty buffer, nothing eligible) and change the code so the lane "
+                "produces publishable output. Never weaken a safety, rights, factual or quality gate, never invent "
+                "facts or fake real footage; if the only fix is a looser gate or the owner's action, set "
+                "fixable_in_code false and say what to do.\n")
+        steps = "green run, nothing published"
+        tried = self.recent(fp, {"fixed", "fix-failed", "fix-refused", "escalated"}, 24)
+        if not (self.can_edit and self.lane["workflows"].get(wf_file, {}).get("fix", True)) or tried \
+                or self.fixes_today() >= self.lane["max_fixes_per_day"]:
+            why = ("I already looked at this silence in the last 24 h" if tried else
+                   "this lane is report-only" if not self.can_edit else "today's fix budget is used up")
+            plan = self.diagnose(wf_name, steps, log, wf_file, task + "- Diagnose only: return no edits.\n")
+            msg = f"Cause: {plan.get('diagnosis') or gap}\n" + (f"What to do: {plan['human_action']}\n" if plan.get("human_action") else "")
+            return self.finish(rec, "escalated", msg + f"(No code change: {why}.)", None if tried else "SILENT", url)
+        self.attempt(rec, wf_name, wf_file, steps, log, task, url, default)
 
     def attempt(self, rec, wf_name, wf_file, steps, log, extra, url, default, improvement=False):
         ctx = fixer.context(self.target, self.lane, log, wf_file)

@@ -235,9 +235,32 @@ def test_an_alert_is_closed_only_when_runs_are_green_since_and_the_channel_publi
 
 def test_tidy_leaves_fleet_health_and_owner_alerts_alone():
     ok = {"run.yml": [{"conclusion": "success", "created_at": ago(1)}]}
-    for title in ("Channel fleet needs attention", "Kahaani Chaos needs attention", "No upload in the last 30 hours"):
+    for title in ("Channel fleet needs attention", "Kahaani Chaos needs attention"):
         issue = {"number": 8, "title": title, "updated_at": ago(8)}
         assert tidy.stale(TidyGH([issue], ok, atom(ago(2))), "o/r", LANE, {"youtube": "UCx"}, AT) == []
+
+
+def test_an_upload_gap_alert_closes_once_the_channel_published_after_it():
+    issue = {"number": 6, "title": "No upload in the last 30 hours", "updated_at": ago(40)}
+    failing = {"run.yml": [{"conclusion": "failure", "created_at": ago(1)}]}
+    (closed, why), = tidy.stale(TidyGH([issue], failing, atom(ago(3))), "o/r", LANE, {"youtube": "UCx"}, AT)
+    assert closed["number"] == 6 and "published 3 h ago" in why
+    assert tidy.stale(TidyGH([issue], failing, atom(ago(50))), "o/r", LANE, {"youtube": "UCx"}, AT) == []
+
+
+def test_a_silent_channel_gets_its_latest_green_producer_run_healed():
+    lane = {"mode": "fix", "workflows": {"run.yml": {"name": "run", "max_h": 2}, "health.yml": {"name": "health", "max_h": 9}}}
+    runs = {"run.yml": [{"id": 9, "conclusion": "failure"}, {"id": 8, "conclusion": "success"}],
+            "health.yml": [{"id": 7, "conclusion": "success"}]}
+    ch = {"name": "C", "youtube": "UCx", "quiet_h": 10, "min_24h": 2}
+    run, why = tidy.silent_run(TidyGH([], runs, atom(ago(30))), "o/r", lane, ch, AT)
+    assert run["id"] == 8 and "no new public upload for 30 h" in why
+    run, why = tidy.silent_run(TidyGH([], runs, atom(ago(3))), "o/r", lane, ch, AT)
+    assert run["id"] == 8 and "only 1 public uploads" in why
+    assert tidy.silent_run(TidyGH([], runs, atom(ago(3))), "o/r", lane, dict(ch, min_24h=1), AT) is None
+    for other in ({"hands_off": True}, {"drill": True}):
+        assert tidy.silent_run(TidyGH([], runs, atom(ago(30))), "o/r", lane, dict(ch, **other), AT) is None
+    assert tidy.silent_run(TidyGH([], runs, atom(ago(30))), "o/r", dict(lane, mode="watch"), ch, AT) is None
 
 
 # ---- the local Qwen brain and the alternatives ----------------------------------------------------------

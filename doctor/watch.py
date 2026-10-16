@@ -51,6 +51,22 @@ def feed(gh: GitHub, channel_id: str) -> list[dict]:
     return sorted(out, key=lambda v: v["published"] or "", reverse=True)
 
 
+def silence(ch: dict, vids: list[dict], at: datetime) -> tuple[str, str] | None:
+    """("quiet" or "thin", message) when the channel publishes less than it should, else None."""
+    last = vids[0]["published"] if vids else None
+    day = [v for v in vids if v["published"] and hours(v["published"], at) <= 24]
+    if ch.get("watch_from") and at < datetime.fromisoformat(ch["watch_from"]):
+        return None
+    if last is None:
+        return "quiet", f"{ch['name']}: no public upload at all"
+    if hours(last, at) > ch.get("quiet_h", 36):
+        return "quiet", f"{ch['name']}: no new public upload for {hours(last, at):.0f} h (limit {ch.get('quiet_h', 36)} h)"
+    if len(day) < ch.get("min_24h", 0):
+        return "thin", (f"{ch['name']}: only {len(day)} public uploads in the last 24 h (expected at least "
+                        f"{ch['min_24h']}): the lane is green but short of stories or refusing its own output")
+    return None
+
+
 def never_started(gh: GitHub, repo: str, run: dict) -> bool:
     """A failed run whose jobs ran no step at all: GitHub refused to start it (billing or spending limit)."""
     try:
@@ -80,15 +96,8 @@ def check(gh: GitHub, cfg: dict, at: datetime,
                 day = [v for v in vids if v["published"] and hours(v["published"], at) <= 24]
                 if ch.get("watch_from") and at < datetime.fromisoformat(ch["watch_from"]):
                     lines.append(f"upload watch starts {ch['watch_from'][:16]} UTC")
-                elif last is None:
-                    problems[f"quiet:{key}"] = f"{ch['name']}: no public upload at all"
-                elif hours(last, at) > ch.get("quiet_h", 36):
-                    problems[f"quiet:{key}"] = (f"{ch['name']}: no new public upload for {hours(last, at):.0f} h "
-                                                f"(limit {ch.get('quiet_h', 36)} h)")
-                elif len(day) < ch.get("min_24h", 0):
-                    problems[f"thin:{key}"] = (f"{ch['name']}: only {len(day)} public uploads in the last 24 h "
-                                               f"(expected at least {ch['min_24h']}): the lane is green but "
-                                               f"short of stories or refusing its own output")
+                elif gap := silence(ch, vids, at):
+                    problems[f"{gap[0]}:{key}"] = gap[1]
                 lines.append(f"uploads 24h: {len(day)}; last {hours(last, at):.1f} h ago" if last else "no uploads")
                 if vids:
                     v = vids[0]
