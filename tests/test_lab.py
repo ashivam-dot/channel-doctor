@@ -93,6 +93,58 @@ def test_a_new_upload_gets_one_clean_first_comment_and_never_twice():
     assert "text" not in state["done"]["comment"]["y1"]
 
 
+def comment(cid, text, author="UCviewer", h=3):
+    return {"id": cid, "snippet": {"textDisplay": text, "authorChannelId": {"value": author}, "publishedAt": ago(h)}}
+
+
+def thread(top, replies=(), vid="y1"):
+    return {"id": top["id"], "snippet": {"videoId": vid, "topLevelComment": top, "totalReplyCount": len(replies)},
+            "replies": {"comments": list(replies)}}
+
+
+class ThreadYT(FakeYT):
+    channel_id = "UCme"
+
+    def __init__(self, threads, **k):
+        super().__init__([yt_vid(1, 5, 30, title="Kolkata pandal stampede")], **k)
+        self.all = threads
+
+    def threads(self):
+        return self.all
+
+    def replies(self, thread_id):
+        return []
+
+
+def test_each_positive_comment_gets_one_warm_reply_and_nothing_else_is_answered():
+    praise, critic, spam = comment("c1", "बहुत बढ़िया जानकारी, धन्यवाद"), comment("c2", "galat news hai"), \
+        comment("c3", "sub to my channel")
+    answered = comment("c4", "nice video")
+    ours = comment("c5", "आप क्या सोचते हैं?", author="UCme", h=10)
+    later = comment("c6", "Great channel bro", h=2)
+    yt = ThreadYT([thread(praise), thread(critic), thread(spam),
+                   thread(answered, [comment("r1", "धन्यवाद!", author="UCme")]), thread(ours, [later])])
+    b = FakeBrain({"POSITIVE": {"replies": [{"n": 1, "positive": True, "reply": "धन्यवाद, जुड़े रहिए 🙏"},
+                                            {"n": 2, "positive": False}, {"n": 3, "positive": False},
+                                            {"n": 4, "positive": True, "reply": "Thanks a lot, glad you like it!"}]}})
+    ch = CH | {"lab": {"language": "hi", "experiments": ["reply"]}}
+    state = {}
+    log = lab.run_experiments(yt, b, ch, state, AT)
+    posts = [c for c in yt.calls if c[1] == "comments"]
+    assert [p[3]["snippet"]["parentId"] for p in posts] == ["c1", "c5"] and len(log) == 2
+    assert "c4" not in b.prompts[0] and "nice video" not in b.prompts[0] and "Kolkata" in b.prompts[0]
+    assert state["done"]["reply"]["c2"]["positive"] is False and state["done"]["reply"]["c6"]["positive"]
+    lab.run_experiments(yt, b, ch, state, AT)
+    assert len([c for c in yt.calls if c[1] == "comments"]) == 2
+
+
+def test_a_reply_with_a_link_or_a_subscribe_request_is_never_posted():
+    yt = ThreadYT([thread(comment("c1", "love it"))])
+    b = FakeBrain({"POSITIVE": {"replies": [{"n": 1, "positive": True, "reply": "Thanks! Subscribe for more"}]}})
+    log = lab.run_experiments(yt, b, CH | {"lab": {"language": "en", "experiments": ["reply"]}}, {}, AT)
+    assert log == [] and not [c for c in yt.calls if c[1] == "comments"]
+
+
 def test_a_failed_write_is_recorded_and_not_retried_every_day():
     ch = {"name": "Orbitwire", "about": "", "lab": {"language": "en", "experiments": ["comment", "localize"],
                                                      "languages": ["es"]}}

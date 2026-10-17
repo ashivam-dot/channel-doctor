@@ -14,7 +14,7 @@
       "min_24h": 3,
       "goal": {"route": "shorts"},
       "about": "Hindi 'kyun hua' explainer Shorts about trending Indian news; timing-first (publish while a story trends); Gemini TTS Sulafat voice; real Commons photos per beat in parallax; AI-voice label.",
-      "lab": {"language": "hi", "experiments": ["comment"]},
+      "lab": {"language": "hi", "experiments": ["comment", "reply"]},
       "lanes": [
         {
           "repo": "hindi-news-desk",
@@ -41,7 +41,7 @@
       "watch_from": "2026-10-11T12:00:00+00:00",
       "goal": {"route": "longform"},
       "about": "Long-form calm deep-time sleep documentaries (about 2 h), one a day, premiere 00:30 UTC; built on GitHub Actions CPU.",
-      "lab": {"language": "en", "experiments": ["comment", "localize", "retitle"], "languages": ["es", "pt", "de", "fr", "hi"]},
+      "lab": {"language": "en", "experiments": ["comment", "localize", "retitle", "reply"], "languages": ["es", "pt", "de", "fr", "hi"]},
       "lanes": [
         {
           "repo": "pangaea-nights",
@@ -68,7 +68,7 @@
       "watch_from": "2026-10-15T00:00:00+00:00",
       "goal": {"route": "shorts"},
       "about": "Original Hindi magical and mystery twist-story Shorts (13+, not made for kids): AI folk-fantasy paintings painted on runner CPU, Gemini TTS Charon narrator, 12:30 and 20:30 IST from a ready buffer of finished Shorts.",
-      "lab": {"language": "hi", "experiments": ["comment", "retitle"]},
+      "lab": {"language": "hi", "experiments": ["comment", "retitle", "reply"]},
       "lanes": [
         {
           "repo": "kahaani-chaos",
@@ -94,7 +94,7 @@
       "min_24h": 2,
       "goal": {"route": "shorts"},
       "about": "English Shorts on the world's most famous trending stories as photo stories with depth parallax and emotional narration; strict decorum, verified facts.",
-      "lab": {"language": "en", "experiments": ["comment", "localize"], "languages": ["hi", "es", "pt"]},
+      "lab": {"language": "en", "experiments": ["comment", "localize", "reply"], "languages": ["hi", "es", "pt"]},
       "lanes": [
         {
           "repo": "rebuilt-in-3d",

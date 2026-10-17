@@ -12,6 +12,9 @@ the channel's `lab` entry in channels.json, never on a hands-off channel:
 - `retitle`: an evergreen upload that stalled (48-120 h old, under 40% of the channel's median views) gets one new
   title, phrased with real YouTube search suggestions; after 72 h its views per day are compared with before, and the
   experiment switches itself off for the channel if fewer than a third of six tries helped.
+- `reply`: one warm reply, in the viewer's own language, to each positive comment the channel has not answered
+  (praise, thanks, support); criticism, corrections, arguments and spam are left alone. Owner, 2026-10-18: "reply to
+  all positive comments of all channels".
 Never fake engagement (views, likes, subscribers, sub4sub), never a misleading title, never spam: those are what
 get a channel refused at YPP review or terminated.
 """
@@ -35,6 +38,7 @@ LANG_NAMES = {"hi": "Hindi (Devanagari script)", "en": "English", "es": "Spanish
 BREAKOUT_X = 3.0
 BREAKOUT_MIN_VIEWS = 200
 MAX_COMMENTS, MAX_LOCALIZE, MAX_RETITLE = 3, 3, 1
+MAX_REPLIES, REPLY_PAGES = 40, 3  # a reply costs 50 quota units; 40 is 2,000 of the project's 10,000 a day
 RETITLE_JUDGE_H = 72
 DONE_KEEP_H = 24 * 8
 MAX_RETITLES_KEPT = 30
@@ -109,6 +113,24 @@ class YouTube:
         res = self.call("GET", "videos", {"part": "snippet,statistics,status,localizations", "id": ",".join(ids)})
         return res.get("items", [])
 
+    def threads(self, pages: int = REPLY_PAGES) -> list[dict]:
+        """The newest comment threads on any of the channel's videos, with up to five replies each."""
+        out, token = [], None
+        for _ in range(pages):
+            params = {"part": "snippet,replies", "allThreadsRelatedToChannelId": self.channel_id, "maxResults": 100,
+                      "order": "time", "textFormat": "plainText"} | ({"pageToken": token} if token else {})
+            res = self.call("GET", "commentThreads", params)
+            out += res.get("items", [])
+            token = res.get("nextPageToken")
+            if not token:
+                break
+        return out
+
+    def replies(self, thread_id: str) -> list[dict]:
+        res = self.call("GET", "comments", {"part": "snippet", "parentId": thread_id, "maxResults": 100,
+                                            "textFormat": "plainText"})
+        return res.get("items", [])
+
     def commented(self, video_id: str) -> bool:
         """Whether the channel already has a top-level comment on the video (so a lost state never doubles it)."""
         res = self.call("GET", "commentThreads", {"part": "snippet", "videoId": video_id, "maxResults": 100})
@@ -155,6 +177,21 @@ Current title: {title}
 Description: {description}
 YouTube search suggestions for this topic: {suggest}
 Return JSON {{"title": "..."}}."""
+
+REPLY = """You run the YouTube channel "{channel}" ({about}). Below are viewers' comments on the channel's videos.
+For each, decide whether it is POSITIVE: praise, thanks, enjoyment, support, warm agreement, or a friendly question
+from someone who liked the video. Not positive: criticism, complaints, corrections, disagreement, insults, political
+arguments, spam, self-promotion, links, "sub to me", gibberish, or a bare emoji with nothing to answer.
+For each positive comment write the channel's reply in the commenter's own language and script (Hindi, Hinglish or
+English as they wrote): warm, specific to what they said and to the video, one or two short sentences, under 160
+characters. No links, no hashtags, no @mentions, at most one emoji, never ask them to like, subscribe or share, never
+promise a video or a date, no claim that is not in the comment or the video title. If the video is about a death, an
+attack, a disaster or any tragedy: no emoji and nothing cheerful; thank them respectfully.
+If a positive comment asks a factual question you cannot answer from the title, thank them without answering it.
+Comments:
+{comments}
+Return JSON {{"replies": [{{"n": 1, "positive": true, "reply": "..."}}, {{"n": 2, "positive": false}}]}} with one
+entry per comment."""
 
 BAD = re.compile(r"https?://|www\.|@\w|#\w")
 LINK = re.compile(r"https?://|www\.|@\w")
@@ -266,6 +303,71 @@ def run_experiments(yt: YouTube, brain, ch: dict, state: dict, at: datetime, dry
 
     if "retitle" in kinds and not state.get("retitle_off"):
         log += retitle(yt, ask, ch, vids, state, at, lang, about, dry)
+    if "reply" in kinds:
+        log += reply(yt, ask, ch, {v["id"]: v["snippet"]["title"] for v in vids}, done, at, about, write)
+    return log
+
+
+def unanswered(yt: YouTube, thread: dict) -> list[dict]:
+    """Viewers' comments in a thread the channel has not answered: the top comment when the channel never replied
+    in its thread; under the channel's own comment, viewers' replies posted after the channel's last reply there."""
+    top = thread["snippet"]["topLevelComment"]
+    total = thread["snippet"].get("totalReplyCount", 0)
+    replies = (thread.get("replies") or {}).get("comments", [])
+    if total > len(replies):
+        replies = yt.replies(top["id"])
+
+    def mine(c):
+        return c["snippet"].get("authorChannelId", {}).get("value") == yt.channel_id
+
+    if not mine(top):
+        return [] if any(mine(r) for r in replies) else [top]
+    last = max([r["snippet"]["publishedAt"] for r in replies if mine(r)] or [top["snippet"]["publishedAt"]])
+    return [r for r in replies if not mine(r) and r["snippet"]["publishedAt"] > last]
+
+
+def clean_reply(text: str | None) -> str | None:
+    text = clean_comment(text)
+    return text if text and len(text) <= 200 else None
+
+
+def reply(yt, ask, ch, titles, done, at, about, write) -> list[str]:
+    """One warm reply to each positive viewer comment the channel has not answered (newest first)."""
+    log, seen = [], done.setdefault("reply", {})
+    try:
+        threads = yt.threads()
+    except Exception as e:
+        return [f"comments could not be read ({getattr(e, 'code', '') or type(e).__name__})"]
+    todo = []
+    for t in threads:
+        vid = t["snippet"].get("videoId")
+        for c in unanswered(yt, t):
+            text = c["snippet"].get("textDisplay") or c["snippet"].get("textOriginal") or ""
+            if c["id"] not in seen and text.strip():
+                todo.append({"id": c["id"], "thread": t["id"], "video": vid, "text": text[:500],
+                             "title": titles.get(vid) or t["snippet"].get("videoTitle") or ""})
+    todo = todo[:MAX_REPLIES]
+    for i in range(0, len(todo), 20):
+        batch = todo[i:i + 20]
+        listing = "\n".join(f"{n}. [video: {c['title'][:90]}] {c['text']}" for n, c in enumerate(batch, 1))
+        res = ask(REPLY.format(channel=ch["name"], about=about, comments=listing)) or {}
+        verdicts = {r.get("n"): r for r in res.get("replies") or [] if isinstance(r, dict)}
+        if not verdicts:
+            log.append(f"reply: the brain gave no verdicts for {len(batch)} comments; they wait for the next run")
+            continue
+        for n, c in enumerate(batch, 1):
+            v = verdicts.get(n) or {}
+            text = clean_reply(v.get("reply")) if v.get("positive") else None
+            if not v.get("positive"):
+                seen[c["id"]] = {"at": at.isoformat(), "video": c["video"], "positive": False}
+                continue
+            if not text:
+                continue
+            if not write("reply", c["id"], "reply", "POST", "comments", {"part": "snippet"},
+                         {"snippet": {"parentId": c["thread"], "textOriginal": text}}, 50):
+                continue
+            seen[c["id"]] = {"at": at.isoformat(), "video": c["video"], "positive": True}
+            log.append(f"replied to \"{c['text'][:70]}\" on \"{c['title'][:40]}\": {text}")
     return log
 
 
