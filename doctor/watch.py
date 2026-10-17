@@ -161,26 +161,32 @@ def retold(recent: list[dict], vids: list[dict], at: datetime) -> list[str]:
     return out
 
 
-SLUMP_SHARE, SLUMP_MIN_USUAL, SLUMP_AGE_H = 0.1, 100, (12, 72)
+SLUMP_SHARE, SLUMP_MIN_USUAL, SLUMP_AGE_H, SLUMP_LOOK = 0.3, 20, (12, 48), 8
 
 
 def slump(vids: list[dict], at: datetime, fixed_at: str | None = None) -> str | None:
-    """Viewers refusing what the channel now makes: its two newest uploads, both SLUMP_AGE_H old, under SLUMP_SHARE
-    of the usual (median of uploads 48 h+ old, at least SLUMP_MIN_USUAL). Orbitwire's first two Shorts after a
-    format change (2026-10-16) had 5 and 2 views against the usual 300: the change, not the topic, is the suspect."""
+    """Viewers refusing what the channel now makes: the (up to SLUMP_LOOK) newest uploads SLUMP_AGE_H old, made by
+    the current code, under SLUMP_SHARE of the usual (median of uploads 48 h+ old, at least SLUMP_MIN_USUAL): both
+    of two, or the median of three or more. Orbitwire's first two Shorts after a format change (2026-10-16) had 5 and
+    2 views against the usual 300. Kyun Hua's uploads of 2026-10-17 had a median of 8 against the usual 55 and the
+    old check never saw it: it needed a usual of 100 and judged only the two newest uploads, which at 20 a day are
+    always under 12 h old."""
+    lo, hi = SLUMP_AGE_H
     dated = sorted((v for v in vids if v.get("published") and v.get("views") is not None),
                    key=lambda v: v["published"], reverse=True)
-    settled = [v["views"] for v in dated if hours(v["published"], at) >= 48]
-    if len(settled) < 6 or (usual := statistics.median(settled)) < SLUMP_MIN_USUAL or len(dated) < 2:
+    settled = [v["views"] for v in dated if hours(v["published"], at) >= hi]
+    if len(settled) < 6 or (usual := statistics.median(settled)) < SLUMP_MIN_USUAL:
         return None
-    newest = dated[:2]
-    if fixed_at and hours(newest[0]["published"], at) > hours(fixed_at, at):
+    recent = [v for v in dated if lo <= hours(v["published"], at) < hi
+              and not (fixed_at and hours(v["published"], at) > hours(fixed_at, at))][:SLUMP_LOOK]
+    if len(recent) < 2:
         return None
-    lo, hi = SLUMP_AGE_H
-    if all(lo <= hours(v["published"], at) <= hi and v["views"] < SLUMP_SHARE * usual for v in newest):
-        return (f"the 2 newest uploads have {newest[0]['views']} and {newest[1]['views']} views against the usual "
-                f"{usual:,.0f}: check what the producing code changed just before them and undo it if it is the cause")
-    return None
+    views = [v["views"] for v in recent]
+    if (max(views) if len(views) == 2 else statistics.median(views)) >= SLUMP_SHARE * usual:
+        return None
+    said = " and ".join(map(str, views)) if len(views) == 2 else f"a median of {statistics.median(views):,.0f}"
+    return (f"the {len(views)} uploads {lo}-{hi} h old have {said} views against the usual {usual:,.0f}: check what "
+            f"the producing code changed just before them and which stories it picked, and fix the cause")
 
 
 def symptom(ch: dict, vids: list[dict], at: datetime, fixed_at: str | None = None) -> tuple[str, str] | None:

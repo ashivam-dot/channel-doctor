@@ -112,8 +112,17 @@ def test_two_new_uploads_far_below_the_usual_are_a_slump_until_the_code_changes(
     assert "5 and 2 views" in watch.quality({"name": "Orbitwire"}, quakes + old, AT)
     assert watch.slump([dict(quakes[0], views=200), quakes[1]] + old, AT) is None
     assert watch.slump([dict(q, published=(AT - timedelta(hours=3)).isoformat()) for q in quakes] + old, AT) is None
-    assert watch.slump(quakes + [dict(v, views=40) for v in old], AT) is None
+    assert watch.slump(quakes + [dict(v, views=15) for v in old], AT) is None
     assert watch.slump(quakes + old, AT, (AT - timedelta(hours=1)).isoformat()) is None
+
+
+def test_a_busy_low_view_channel_whose_day_falls_away_is_a_slump():
+    old = [dict(vid(f"Story {i}", 50 + 5 * i), views=55 + i) for i in range(10)]
+    day = [dict(vid(f"New {i}", 13 + 2 * i), views=v) for i, v in enumerate([0, 4, 6, 8, 8, 35, 55, 95])]
+    fresh = [dict(vid(f"Fresh {i}", 1 + i), views=0) for i in range(5)]
+    assert "8 uploads 12-48 h old have a median of 8 views against the usual 60" in watch.slump(fresh + day + old, AT)
+    good = [dict(v, views=v["views"] + 40) for v in day]
+    assert watch.slump(fresh + good + old, AT) is None
 
 
 def test_the_producing_codes_last_change_is_the_newest_editable_commit():
