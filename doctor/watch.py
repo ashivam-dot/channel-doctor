@@ -191,6 +191,8 @@ def slump(vids: list[dict], at: datetime, fixed_at: str | None = None) -> str | 
 
 def symptom(ch: dict, vids: list[dict], at: datetime, fixed_at: str | None = None) -> tuple[str, str] | None:
     """The channel's most urgent green-run problem: silence first, then visible defects in recent uploads."""
+    if ch.get("paused"):
+        return None
     if gap := silence(ch, vids, at):
         return gap
     if not ch.get("hands_off") and (bad := quality(ch, vids, at, fixed_at)):
@@ -218,6 +220,8 @@ def check(gh: GitHub, cfg: dict, at: datetime,
         if ch.get("drill"):
             continue
         lines = status.setdefault(ch["name"], [])
+        if ch.get("paused"):
+            lines.append(f"paused since {ch['paused']} (owner's call): publishing is off on purpose")
         if ch.get("youtube"):
             try:
                 vids = feed(gh, ch["youtube"])
@@ -248,11 +252,11 @@ def check(gh: GitHub, cfg: dict, at: datetime,
                     continue
                 tag = f"{lane['repo']}/{wf_file}"
                 if state != "active":
-                    if wf.get("max_h"):
+                    if wf.get("max_h") and not ch.get("paused"):
                         problems[f"disabled:{tag}"] = f"{ch['name']}: {tag} is {state}; its schedule no longer runs"
                     continue
                 scheduled = [r for r in runs if r["event"] == "schedule"]
-                if wf.get("max_h") and scheduled and hours(scheduled[0]["created_at"], at) > wf["max_h"]:
+                if wf.get("max_h") and not ch.get("paused") and scheduled and hours(scheduled[0]["created_at"], at) > wf["max_h"]:
                     problems[f"late:{tag}"] = (f"{ch['name']}: {tag} has not run on schedule for "
                                                f"{hours(scheduled[0]['created_at'], at):.0f} h (limit {wf['max_h']} h)")
                 done = [r for r in runs if r["status"] == "completed" and r["conclusion"] != "skipped"][:STREAK]

@@ -309,6 +309,9 @@ class Healer:
 
     # ---- twice-weekly improvement --------------------------------------------------------------------------
     def improve(self):
+        if self.ch.get("paused"):
+            print("channel is paused; improvement skipped")
+            return
         if not self.can_edit:
             print("lane is not allowed to change code; improvement skipped")
             return

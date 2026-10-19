@@ -58,3 +58,15 @@ def test_a_report_only_lane_explains_the_silence_once_a_day(monkeypatch):
     h.finished.clear()
     h.heal("5")
     assert h.finished[0][2] is None
+
+
+def test_a_paused_channel_is_never_silent_and_never_improved(monkeypatch):
+    monkeypatch.setattr(watch, "feed", lambda gh, cid: [{"published": state.iso(state.now() - timedelta(hours=300)),
+                                                         "title": "T", "views": 1}])
+    h = healer(GH("success"), can_edit=True)
+    h.ch["paused"] = "2026-10-20"
+    h.heal("5")
+    assert h.attempted == [] and h.finished == []
+    assert watch.symptom(h.ch, watch.feed(None, "UCx"), state.now()) is None
+    h.gh.text = lambda url: (_ for _ in ()).throw(AssertionError("improve must not read the review"))
+    h.improve()

@@ -36,6 +36,7 @@
     },
     "pangaea": {
       "name": "Pangaea Nights",
+      "paused": "2026-10-20",
       "youtube": "UCtVG78IUTqvP9rH-LLies0A",
       "quiet_h": 30,
       "watch_from": "2026-10-11T12:00:00+00:00",
@@ -63,6 +64,7 @@
     },
     "kahaani-chaos": {
       "name": "Kahaani Chaos",
+      "paused": "2026-10-20",
       "youtube": "UCX-96TVtOBCEkDMloHuYAHw",
       "quiet_h": 20,
       "watch_from": "2026-10-15T00:00:00+00:00",
@@ -142,6 +144,7 @@
     },
     "mool-katha": {
       "name": "Mool Katha",
+      "paused": "2026-10-20",
       "youtube": "UCdqxVnoHDWXgA2ZVJWkSu8w",
       "quiet_h": 20,
       "min_24h": 1,
@@ -161,6 +164,7 @@
     },
     "scam-autopsy": {
       "name": "Scam Autopsy",
+      "paused": "2026-10-20",
       "youtube": "UCz0W-lSVvEeWYufkUVaVUKA",
       "quiet_h": 120,
       "goal": {"route": "longform"},
