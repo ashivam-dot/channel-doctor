@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import statistics
 import time
 from datetime import datetime
@@ -12,7 +13,7 @@ from . import config, growth, mission, telegram
 from .brain import Brain
 from .github import GitHub
 from .state import IssueState, iso, now
-from .watch import feed, hours
+from .watch import feed, hours, title_problems
 
 HOME = os.environ.get("GITHUB_REPOSITORY", "ashivam-dot/channel-doctor")
 
@@ -45,6 +46,7 @@ Summary: {summary}
 Results of earlier automatic improvements (median views of videos with 24 h+ of data, before vs after):
 {experiments}
 Automation reliability (last 7 days): {reliability}
+Title and tag lint (published titles; deterministic checks): {lint}
 Channel's own learnings file (excerpt):
 {learnings}
 CHANNEL.md excerpt:
@@ -102,6 +104,37 @@ def reliability(gh: GitHub, owner: str, ch: dict, at: datetime) -> str:
                 bad = sum(r["conclusion"] in ("failure", "timed_out") for r in week)
                 out.append(f"{wf['name']}: {bad} of {len(week)} runs failed")
     return "; ".join(out) or "no workflow data"
+
+
+# A share can't pass 100% (a change can: say "rise"), and a 0.0 is a missing number more often than a real one.
+PERCENT = re.compile(r"(\d+(?:[.,]\d+)?)\s?(?:%|percent\b)", re.I)
+ZERO = re.compile(r"(?<![\d.,])0[.,]0+(?!\d)")
+
+
+def title_flags(title: str) -> list[str]:
+    out = title_problems(title)
+    if over := [p for p in PERCENT.findall(title or "") if float(p.replace(",", ".")) > 100]:
+        out.append(f"percentage over 100% ({over[0]}%)")
+    if ZERO.search(title or ""):
+        out.append(f"zero value {ZERO.search(title).group(0)!r}")
+    return out
+
+
+def lint(vids: list[dict], analytics: dict | None) -> list[str]:
+    """Defects in published titles (public feed, and the channel's own API listing when it has one) and pipeline tags
+    leaked into public video tags or channel keywords (the API shows tags to the owner's sign-in only)."""
+    analytics = analytics or {}
+    titles = {v["id"]: v["title"] for v in vids if v.get("id")}
+    for vid, title, *_ in analytics.get("recent") or []:
+        titles.setdefault(vid, title)
+    out = [f"{vid} \"{t}\": {p}" for vid, t in titles.items() for p in title_flags(t)]
+    tagged = [r for r in analytics.get("recent") or [] if len(r) > 3 and r[3]]
+    if tagged:
+        out.append(f"{len(tagged)} of the latest {len(analytics['recent'])} public uploads carry pipeline tags in their "
+                   f"public tags (e.g. {tagged[0][0]}: {', '.join(tagged[0][3])})")
+    if analytics.get("keywords_machine"):
+        out.append(f"channel keywords carry pipeline tags: {', '.join(analytics['keywords_machine'][:5])}")
+    return out
 
 
 def learnings(gh: GitHub, owner: str, ch: dict) -> tuple[str, str]:
@@ -193,6 +226,7 @@ def main(dry: bool = False):
                 blind = True
                 print(f"{ch['name']}: feed unreadable ({type(exc).__name__})")
         table, summary = uploads_table(vids, at)
+        analytics = road.get(key, {}).get("analytics")
         if blind:
             table, summary = "(feed unreadable in this run)", FEED_UNKNOWN
         if not ch.get("youtube"):
@@ -210,9 +244,12 @@ def main(dry: bool = False):
                          "channels, so missing uploads in the feed are not evidence of a stall.")
         notes.append("A newer version of a video that replaced an older one (the older made private) is deliberate, not a duplicate.")
         rl = road_line(road.get(key, {}))
+        flags = lint(vids, analytics)
+        print(f"lint {ch['name']}: {len(flags)} title/tag flags")
         prompt = PROMPT.format(mission=brief, name=ch["name"], about=ch.get("about", ""), road=rl, uploads=table,
                                summary=summary, experiments=experiments(gh, cfg["owner"], ch, vids, at),
                                reliability=reliability(gh, cfg["owner"], ch, at), learnings=learn, rules=rules,
+                               lint="; ".join(flags[:12]) or "nothing flagged",
                                hands_off="".join("\n" + n for n in notes))
         print(f"reviewing {ch['name']} ({len(vids)} uploads in feed)")
         res = brain.ask_json(prompt, "deep", models=6, rounds=2, pause=20) or {}
@@ -224,7 +261,7 @@ def main(dry: bool = False):
         for r in res.get("recommendations", []):
             if locked or r.get("risk") != "low" or r.get("target") != "code":
                 r["auto_ok"] = False
-        report["channels"][key] = {"name": ch["name"], "summary": summary, "road": rl, **res}
+        report["channels"][key] = {"name": ch["name"], "summary": summary, "road": rl, "title_lint": flags, **res}
         risk = res.get("inauthentic_risk") or {}
         focus_in.append(f"## {ch['name']}\nRoad: {rl}\nUploads: {summary}\nHealth: {res.get('health')}\n"
                         f"Lever: {res.get('ypp_lever')}\nInauthentic-content risk: {risk.get('level')} ({risk.get('why')})")
@@ -234,6 +271,8 @@ def main(dry: bool = False):
             md += [f"**Biggest lever:** {res['ypp_lever']}", ""]
         if risk:
             md += [f"**Inauthentic-content risk:** {risk.get('level')} ({risk.get('why')})", ""]
+        if flags:
+            md += ["**Title and tag lint**", *[f"- {f}" for f in flags[:20]], ""]
         if res.get("working"):
             md += ["**Working**", *[f"- {w}" for w in res["working"]], ""]
         if res.get("not_working"):
@@ -248,6 +287,8 @@ def main(dry: bool = False):
             tg.append(f"  Lever: {res['ypp_lever']}")
         if risk.get("level") in ("medium", "high"):
             tg.append(f"  YPP risk ({risk['level']}): {risk.get('why')}")
+        if flags:
+            tg.append(f"  Title lint: {len(flags)} flagged, e.g. {flags[0]}")
         tg += [f"  - {r.get('change')}{' (doctor will apply)' if r.get('auto_ok') else ''}" for r in recs[:2]]
 
     focus = brain.ask_json(FOCUS.format(mission=brief, channels="\n\n".join(focus_in)), "deep", models=6, rounds=2, pause=20) or {}

@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shlex
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -87,13 +88,18 @@ def analytics(raw_credential: str, today: date | None = None) -> dict:
                  "write_scope": bool(scopes & {"https://www.googleapis.com/auth/youtube",
                                                "https://www.googleapis.com/auth/youtube.force-ssl"})}
     try:
-        ch = _json("https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&mine=true", token=token)["items"][0]
+        ch = _json("https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet,contentDetails,brandingSettings"
+                   "&mine=true", token=token)["items"][0]
         st = ch["statistics"]
         out |= {"channel": ch["id"], "subs": int(st.get("subscriberCount", 0)), "views_total": int(st.get("viewCount", 0)),
                 "videos": int(st.get("videoCount", 0))}
     except (urllib.error.HTTPError, KeyError, IndexError) as e:
         out["error"] = f"channel stats failed ({getattr(e, 'code', type(e).__name__)})"
         return out
+    try:
+        out |= uploads_meta(ch, token)
+    except (OSError, KeyError, ValueError, TypeError) as e:  # lint input only: never costs the numbers below
+        out["uploads_error"] = f"{getattr(e, 'code', type(e).__name__)}"
     end = (today or datetime.now(timezone.utc).date()) - timedelta(days=1)
 
     def report(days: int, metrics: str, dims: str | None = None):
@@ -142,6 +148,41 @@ def analytics(raw_credential: str, today: date | None = None) -> dict:
     return out
 
 
+# A pipeline's own bookkeeping tag (rebuilt-in-3d:wk-Q42, hindi-news-desk:kh-1f2e): meaningless to viewers and search.
+MACHINE_TAG = re.compile(r"^[a-z0-9][a-z0-9-]*:[\w-]+$")
+RECENT = 15
+
+
+def keywords(text: str) -> list[str]:
+    """brandingSettings.channel.keywords: space separated, multi-word keywords in double quotes."""
+    try:
+        return shlex.split(text or "")
+    except ValueError:
+        return (text or "").split()
+
+
+def uploads_meta(ch: dict, token: str) -> dict:
+    """The latest public uploads as the owner's sign-in sees them (tags included), for the review's title lint and for
+    when the public feed is unreadable: [video, title, published, machine tags]. Private and scheduled ones are left
+    out: this lands in the repo's state issue. Plus machine tags in the channel keywords. 2 quota units."""
+    uploads = ch["contentDetails"]["relatedPlaylists"]["uploads"]
+    items = _json("https://www.googleapis.com/youtube/v3/playlistItems?" + urllib.parse.urlencode(
+        {"part": "contentDetails", "playlistId": uploads, "maxResults": RECENT}), token=token).get("items") or []
+    ids = [i["contentDetails"]["videoId"] for i in items]
+    recent = []
+    if ids:
+        vids = _json("https://www.googleapis.com/youtube/v3/videos?" + urllib.parse.urlencode(
+            {"part": "snippet,status", "id": ",".join(ids)}), token=token).get("items") or []
+        for v in vids:
+            sn = v.get("snippet") or {}
+            if (v.get("status") or {}).get("privacyStatus") == "public":
+                recent.append([v["id"], sn.get("title", ""), sn.get("publishedAt"),
+                               [t for t in sn.get("tags") or [] if MACHINE_TAG.match(t)][:3]])
+    recent.sort(key=lambda r: r[2] or "", reverse=True)
+    words = keywords(((ch.get("brandingSettings") or {}).get("channel") or {}).get("keywords", ""))
+    return {"recent": recent, "keywords_machine": [w for w in words if MACHINE_TAG.match(w)]}
+
+
 GROWTH_TITLE = "Doctor growth"
 GROWTH_INTRO = ("Channel Doctor's daily YouTube Analytics numbers for this channel (subscribers, Shorts views in 90 days, "
                 "long-form watch hours in 365 days), read by the central Road-to-YPP digest.")
@@ -158,7 +199,7 @@ def run_repo(repo: str, dry: bool = False):
         return
     res = analytics(raw)
     res["at"] = iso()
-    print("growth:", json.dumps({k: v for k, v in res.items() if k != "channel"}))
+    print("growth:", json.dumps({k: v for k, v in res.items() if k not in ("channel", "recent")}))
     st = IssueState(GitHub(), repo, GROWTH_TITLE, "doctor", GROWTH_INTRO, dry)
     st.data = res
     st.save()
