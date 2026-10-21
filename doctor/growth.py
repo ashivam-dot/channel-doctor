@@ -95,10 +95,18 @@ def analytics(raw_credential: str, today: date | None = None) -> dict:
 
     try:
         for days, key in ((90, "90d"), (365, "365d")):
-            for kind, views, minutes in report(days, "views,estimatedMinutesWatched", "creatorContentType"):
+            # YPP counts qualified (engaged) Shorts views; plain `views` counts every play start since 2026-08-24.
+            try:
+                rows = report(days, "views,engagedViews,estimatedMinutesWatched", "creatorContentType")
+            except urllib.error.HTTPError as e:
+                if e.code != 400:
+                    raise
+                rows = [[k, v, v, m] for k, v, m in report(days, "views,estimatedMinutesWatched", "creatorContentType")]
+            for kind, views, engaged, minutes in rows:
                 kind = str(kind).upper()
                 if kind == "SHORTS":
-                    out[f"shorts_views_{key}"] = out.get(f"shorts_views_{key}", 0) + int(views)
+                    out[f"shorts_views_{key}"] = out.get(f"shorts_views_{key}", 0) + int(engaged)
+                    out[f"shorts_plays_{key}"] = out.get(f"shorts_plays_{key}", 0) + int(views)
                 elif kind in ("VIDEO_ON_DEMAND", "VIDEOONDEMAND", "LIVE_STREAM", "LIVESTREAM"):
                     out[f"long_hours_{key}"] = round(out.get(f"long_hours_{key}", 0) + minutes / 60, 1)
         rows = report(28, "views,subscribersGained,subscribersLost")
