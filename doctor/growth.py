@@ -76,7 +76,11 @@ def analytics(raw_credential: str, today: date | None = None) -> dict:
     except urllib.error.HTTPError as e:
         return {"error": f"token refresh HTTP {e.code}"}
     token = grant["access_token"]
-    out: dict = {"analytics_scope": "yt-analytics" in grant.get("scope", "")}
+    scopes = set(grant.get("scope", "").split())
+    out: dict = {"analytics_scope": "yt-analytics" in grant.get("scope", ""),
+                 # videos.update (retitle, untag) needs one of these; youtube.upload alone can't edit
+                 "write_scope": bool(scopes & {"https://www.googleapis.com/auth/youtube",
+                                               "https://www.googleapis.com/auth/youtube.force-ssl"})}
     try:
         ch = _json("https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&mine=true", token=token)["items"][0]
         st = ch["statistics"]
