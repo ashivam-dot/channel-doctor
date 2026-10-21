@@ -19,6 +19,11 @@ FINISH = {
     "full": {"label": "full YPP (ad revenue)", "subs": 1000, "hours": 4000, "shorts": 10_000_000},
 }
 DEADLINE = date(2027, 1, 31)
+# Dates the watch-hour and qualified-view totals have to be met by. A YPP review takes about a month and a rejection
+# costs 30 days, so applying under today's bar means being over the line by mid-December; from 1 Feb 2027 new
+# applicants need double.
+WINDOWS = ({"by": date(2026, 12, 15), "hours": 4000, "views": 10_000_000, "label": "by 15 Dec"},
+           {"by": date(2027, 2, 1), "hours": 8000, "views": 20_000_000, "label": "by 1 Feb (doubled bar)"})
 UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 Chrome/128 Safari/537.36",
       "Accept-Language": "en-US,en;q=0.9"}
 
@@ -200,6 +205,8 @@ def snapshot(gh, cfg: dict, state: dict, now: datetime) -> tuple[list[str], dict
             history[key] = rows[-120:]
         route = ch.get("goal", {}).get("route", "shorts")
         line, inf = road(ch["name"], m, history.get(key, []), today, route)
+        if inf.get("projection"):
+            print(f"projection {ch['name']}: " + "; ".join(inf["projection"]))
         if exact and exact.get("analytics_error"):
             line += f" | analytics: {exact['analytics_error']}"
         lines.append(line)
@@ -260,6 +267,9 @@ def road(name: str, m: dict, history: list[list], today: date, route: str) -> tu
                                                         f"{m['listed']:,})" if lag else ""))
     if route in ("longform", "both") and h365 is not None:
         parts.append(f"watch hours {h365:,.0f}")
+    if route in ("longform", "both") or m.get("exact"):
+        info["projection"] = projection(m, history, today, route)
+        parts += info["projection"]
     days_left = (DEADLINE - today).days
     for tier, f in FINISH.items():
         sub_eta = eta_days(subs, f["subs"], sub_rate)
@@ -272,12 +282,63 @@ def road(name: str, m: dict, history: list[list], today: date, route: str) -> tu
     return " | ".join(parts), info
 
 
+def needed_per_day(have: float, target: float, days_left: int, window: int | None = None) -> float | None:
+    """Average a day from today on that reaches `target` on the date `days_left` away. For a rolling `window`-day
+    total (Shorts views in 90 d) today's total is taken as evenly spread, and the part that is older than the window
+    on that date drops out. Watch hours have no window here: these channels are younger than 365 days."""
+    if days_left <= 0:
+        return None
+    kept = have if window is None else have * max(0, window - days_left) / window
+    return max(0.0, (target - kept) / days_left)
+
+
+def verdict(have: float, target: float, need: float | None, pace: float | None) -> str:
+    if have >= target:
+        return "reached"
+    if need is None:
+        return "date passed"
+    if pace is None:
+        return "pace unknown"
+    if pace >= need:
+        return "GO (on pace while it holds)"
+    return f"NO-GO (pace {100 * pace / need:.1f}% of the need)" if need else "NO-GO"
+
+
+def projection(m: dict, history: list[list], today: date, route: str) -> list[str]:
+    """Go/no-go against each window: what each total needs a day from now on against what it does now. It reports the
+    gap; it is not a forecast."""
+    if not m.get("exact"):
+        return ["watch hours and qualified views unknown (no fresh Analytics numbers for this channel)"]
+
+    def num(x: float | None, places: int) -> str:
+        return "?" if x is None else f"{x:,.{places}f}"
+
+    out = []
+    if route in ("longform", "both"):
+        have = m.get("long_hours_365d") or 0.0
+        pace = rate(history, 3)
+        if pace is None and m.get("long_hours_90d") is not None:
+            pace = m["long_hours_90d"] / 90
+        for w in WINDOWS:
+            need = needed_per_day(have, w["hours"], (w["by"] - today).days)
+            out.append(f"{w['hours']:,} h {w['label']}: have {have:,.1f}, need {num(need, 1)} h/day, "
+                       f"pace {num(pace, 1)} h/day: {verdict(have, w['hours'], need, pace)}")
+    if route in ("shorts", "both"):
+        have = m.get("shorts_views_90d") or 0
+        pace = have / 90  # the window's own daily average; a change in a rolling total is not a day's views
+        for w in WINDOWS:
+            need = needed_per_day(have, w["views"], (w["by"] - today).days, window=90)
+            out.append(f"{w['views'] // 1_000_000}M qualified views/90d {w['label']}: have {have:,}, "
+                       f"need {num(need, 0)}/day, pace {num(pace, 0)}/day: {verdict(have, w['views'], need, pace)}")
+    return out
+
+
 def merged(public_numbers: dict, exact: dict | None, now: datetime) -> dict:
     m = {"subs": public_numbers.get("subs"), "shorts_views_90d": public_numbers.get("shorts_views_listed"),
          "listed": public_numbers.get("shorts_views_listed") or 0, "long_hours_365d": None, "exact": False}
     if exact and not exact.get("error") and exact.get("at") and \
             now - datetime.fromisoformat(exact["at"]) < timedelta(hours=48):
-        m |= {k: exact[k] for k in ("subs", "shorts_views_90d", "long_hours_365d", "subs_net_28d", "views_28d", "through")
-              if k in exact}
+        m |= {k: exact[k] for k in ("subs", "shorts_views_90d", "long_hours_365d", "long_hours_90d", "subs_net_28d",
+                                    "views_28d", "through") if k in exact}
         m["exact"] = "analytics_error" not in exact
     return m

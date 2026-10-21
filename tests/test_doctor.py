@@ -268,6 +268,33 @@ def test_road_line_and_merge():
     assert "listed Shorts show 3,918" in growth.road("Orbitwire", lagging, [], at.date(), "shorts")[0]
 
 
+def test_watch_hour_and_qualified_view_go_no_go():
+    today = datetime(2026, 10, 22).date()
+    assert growth.needed_per_day(0, 4000, 54) == pytest.approx(4000 / 54)
+    # 90-day window, 54 days left: the oldest 54 days of today's total have dropped out by then
+    assert growth.needed_per_day(15_300, 10_000_000, 54, window=90) == pytest.approx((10_000_000 - 6120) / 54)
+    assert growth.needed_per_day(15_300, 10_000_000, 102, window=90) == pytest.approx(10_000_000 / 102)
+    assert growth.needed_per_day(1, 4000, 0) is None
+    assert growth.verdict(4100, 4000, 0, None) == "reached" and growth.verdict(10, 4000, None, 1) == "date passed"
+    assert growth.verdict(10, 4000, 70, None) == "pace unknown" and growth.verdict(10, 4000, 70, 80).startswith("GO")
+    assert growth.verdict(10, 4000, 80, 2) == "NO-GO (pace 2.5% of the need)"
+    m = {"subs": 30, "exact": True, "shorts_views_90d": 15_300, "long_hours_365d": 0.0, "long_hours_90d": 0.0}
+    hist = [["2026-10-08", 20, 9000, 0.0], ["2026-10-22", 30, 15_300, 2.8]]
+    lines = growth.projection(m, hist, today, "both")
+    assert lines[0] == "4,000 h by 15 Dec: have 0.0, need 74.1 h/day, pace 0.2 h/day: NO-GO (pace 0.3% of the need)"
+    assert lines[1].startswith("8,000 h by 1 Feb (doubled bar): have 0.0, need 78.4 h/day")
+    assert lines[2] == ("10M qualified views/90d by 15 Dec: have 15,300, need 185,072/day, pace 170/day: "
+                        "NO-GO (pace 0.1% of the need)")
+    assert len(lines) == 4 and "20M" in lines[3]
+    assert len(growth.projection(m, hist, today, "shorts")) == 2
+    assert "unknown" in growth.projection({"subs": 17, "exact": False}, [], today, "both")[0]
+    line, info = growth.road("Orbitwire", m, hist, today, "both")
+    assert "NO-GO" in line and info["projection"] == lines
+    from doctor.review import road_line
+    assert "go/no-go: 4,000 h by 15 Dec" in road_line(info | {"exact": True, "analytics": {}})
+    assert "projection" not in growth.road("Pangaea", {"subs": 3}, [], today, "shorts")[1]
+
+
 def test_review_road_line_conversion():
     from doctor.review import road_line
     info = {"subs": 43, "route": "shorts", "days_to_deadline": 112, "subs_per_day": None, "exact": False,

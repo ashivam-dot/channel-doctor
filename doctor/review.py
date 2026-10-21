@@ -166,6 +166,8 @@ def road_line(info: dict) -> str:
                      f"net subscribers 28d {ana.get('subs_net_28d')}")
     else:
         parts.append("Shorts-views and watch-hour totals unavailable (public numbers only)")
+    if info.get("projection"):
+        parts.append("go/no-go: " + "; ".join(info["projection"]))
     return "; ".join(parts)
 
 
