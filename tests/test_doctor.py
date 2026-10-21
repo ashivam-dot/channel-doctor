@@ -30,6 +30,15 @@ def test_channels_json_is_consistent():
         caller("universe-receipts")
 
 
+def test_revenue_lanes_count_both_finish_lines():
+    chans = config.load()["channels"]
+    assert all(ch.get("goal", {}).get("route", "shorts") in ("shorts", "longform", "both") for ch in chans.values())
+    for key in ("orbitwire", "kyun-hua", "atlas"):
+        assert chans[key]["goal"]["route"] == "both", key
+    # atlas.publish.SLOTS in creature-receipts: 12:00 and 19:00 ET from 2026-10-22
+    assert "two a day" in chans["atlas"]["about"] and chans["atlas"]["min_24h"] == 2
+
+
 @pytest.mark.parametrize("path,ok", [
     ("desk/plan.py", True), ("desk/sub/x.py", True), ("desk/plan.json", False), (".github/workflows/run.yml", False),
     ("tests/test_plan.py", False), ("desk/test_x.py", False), ("CHANNEL.md", False), ("../desk/plan.py", False),

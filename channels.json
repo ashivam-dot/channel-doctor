@@ -12,7 +12,7 @@
       "youtube": "UCS-lEPHkz_dftfUjjeTuxOA",
       "quiet_h": 10,
       "min_24h": 3,
-      "goal": {"route": "shorts"},
+      "goal": {"route": "both"},
       "about": "Hindi 'kyun hua' explainer Shorts about trending Indian news; timing-first (publish while a story trends); Gemini TTS Sulafat voice; real Commons photos per beat in parallax; AI-voice label.",
       "lab": {"language": "hi", "experiments": ["comment", "reply"]},
       "lanes": [
@@ -94,7 +94,7 @@
       "youtube": "UCfqAy1IxE2Cwu9pmZGMambA",
       "quiet_h": 14,
       "min_24h": 2,
-      "goal": {"route": "shorts"},
+      "goal": {"route": "both"},
       "about": "English Shorts on the world's most famous trending stories as photo stories with depth parallax and emotional narration; strict decorum, verified facts.",
       "lab": {"language": "en", "experiments": ["comment", "localize", "reply"], "languages": ["hi", "es", "pt"]},
       "lanes": [
@@ -120,8 +120,8 @@
       "youtube": "UC6e6OB3iw3yp8JnnBYxLItA",
       "quiet_h": 20,
       "min_24h": 2,
-      "goal": {"route": "shorts"},
-      "about": "Data Shorts: one dataset, one surprising contrast, photoreal globe 'cinema' format; three a day; rendered on Modal, published by the history-last-hours-control publisher.",
+      "goal": {"route": "both"},
+      "about": "Data Shorts: one dataset, one surprising contrast, photoreal globe 'cinema' format; two a day (12:00 and 19:00 ET); rendered on Modal three times a day, published by the history-last-hours-control publisher.",
       "lanes": [
         {
           "repo": "history-last-hours-control",
