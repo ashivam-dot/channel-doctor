@@ -145,3 +145,26 @@ def test_analytics_reads_uploads_and_a_failed_listing_never_costs_the_numbers(mo
     fake.broken = True
     out = growth.analytics(cred, today=AT.date())
     assert out["uploads_error"] == "403" and "recent" not in out and out["long_hours_365d"] == 2.0
+
+
+def test_title_flags_spare_changes_hindi_doubling_and_read_thousands():
+    assert review.title_flags("China's Coal Use Rose 340% Since 2000") == []
+    assert review.title_flags("Solar Is 1,200% Bigger Than In 2010") == []
+    assert review.title_flags("Japan Spends 1,000% Of Its Budget") == ["percentage over 100% (1,000%)"]
+    assert review.title_flags("Japan Has 0,5% Of It") == []
+    assert review.title_flags("धीरे धीरे बदल गया भारत", "hi") == []
+    assert review.title_flags("Kya kya hua aaj", "hi") == []
+    assert review.title_flags("The the Last Train") == ["repeated word 'the'"]
+
+
+class FlakyGH(PagedGH):
+    def get(self, path, **params):
+        if params.get("page", 1) > 1:
+            raise OSError("reset")
+        return super().get(path, **params)
+
+
+def test_reliability_keeps_pages_read_before_an_error():
+    gh = FlakyGH({"run.yml": [_run(i / 10, "failure" if i == 3 else "success") for i in range(300)]})
+    line = review.reliability(gh, "o", {"lanes": [{"repo": "r", "workflows": {"run.yml": {"name": "run"}}}]}, AT)
+    assert line == "run: 1 of 100 runs failed (only the latest runs, back 10 h; later pages unreadable)"

@@ -76,8 +76,9 @@ SMALL = {"a", "an", "and", "as", "at", "but", "by", "for", "from", "in", "into",
 LEFTOVER = re.compile(r"\b(?:None|null|undefined|NaN|TODO|TBD|lorem ipsum)\b|\{[a-z_]*\}|\\n|\s{2,}")
 
 
-def title_problems(title: str) -> list[str]:
-    """Defects a viewer would see in an uploaded title (Latin-script titles only)."""
+def title_problems(title: str, language: str = "en") -> list[str]:
+    """Defects a viewer would see in an uploaded title (Latin-script titles only). The repeated-word check runs on
+    English channels only: Hindi doubles words on purpose ("धीरे धीरे", "kya kya")."""
     out = []
     t = (title or "").replace(" #shorts", "").strip()
     if not t:
@@ -92,7 +93,8 @@ def title_problems(title: str) -> list[str]:
     lows = [w for w in words if w[0].islower()]
     if len(caps) >= 3 and len(lows) == 1:
         out.append(f"one word in lower case among title-case words ({lows[0]!r})")
-    tokens = [w.strip(".,:;!?|\"'()").casefold() for w in t.split()]
+    tokens = [w.strip(".,:;!?|\"'()").casefold() for w in t.split()] if language == "en" else []
+    tokens = [w if w.isascii() else "" for w in tokens]
     if dup := next((t.split()[i] for i in range(1, len(tokens)) if tokens[i] and tokens[i] == tokens[i - 1]), None):
         out.append(f"repeated word {dup!r}")
     return out
@@ -116,7 +118,7 @@ def quality(ch: dict, vids: list[dict], at: datetime, fixed_at: str | None = Non
     Uploads from before `fixed_at` (the producing code's last change) are skipped: that code is already different."""
     recent = [v for v in vids if v.get("published") and hours(v["published"], at) <= QA_HOURS
               and not (fixed_at and hours(v["published"], at) > hours(fixed_at, at))]
-    found = [f"\"{v['title']}\": {p}" for v in recent for p in title_problems(v["title"])]
+    found = [f"\"{v['title']}\": {p}" for v in recent for p in title_problems(v["title"], (ch.get("lab") or {}).get("language", "en"))]
     seen: dict[str, int] = {}
     for v in recent:
         key = re.sub(r"\W+", " ", (v["title"] or "").lower()).strip()

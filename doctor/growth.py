@@ -6,6 +6,7 @@ channel's own repo with its own credential (`growth` mode), and are left in that
 central watch to pick up."""
 from __future__ import annotations
 
+import http.client
 import json
 import os
 import re
@@ -98,7 +99,7 @@ def analytics(raw_credential: str, today: date | None = None) -> dict:
         return out
     try:
         out |= uploads_meta(ch, token)
-    except (OSError, KeyError, ValueError, TypeError) as e:  # lint input only: never costs the numbers below
+    except (OSError, http.client.HTTPException, KeyError, ValueError, TypeError) as e:  # lint input only: never costs the numbers below
         out["uploads_error"] = f"{getattr(e, 'code', type(e).__name__)}"
     end = (today or datetime.now(timezone.utc).date()) - timedelta(days=1)
 
@@ -251,7 +252,9 @@ def snapshot(gh, cfg: dict, state: dict, now: datetime) -> tuple[list[str], dict
         if exact and exact.get("analytics_error"):
             line += f" | analytics: {exact['analytics_error']}"
         lines.append(line)
-        info[key] = inf | {"exact": m["exact"], "public": pub, "analytics": {k: v for k, v in (exact or {}).items() if k != "channel"}}
+        # the upload listing stays in the producer's issue (the review reads it there): this state is one issue body
+        info[key] = inf | {"exact": m["exact"], "public": pub,
+                           "analytics": {k: v for k, v in (exact or {}).items() if k not in ("channel", "recent")}}
         got = seen.setdefault(key, [])
         for n in MILESTONES:
             if m["subs"] is not None and m["subs"] >= n and str(n) not in got:
