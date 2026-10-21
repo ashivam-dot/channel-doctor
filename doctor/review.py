@@ -7,7 +7,7 @@ import os
 import re
 import statistics
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from . import config, growth, mission, telegram
 from .brain import Brain
@@ -21,10 +21,12 @@ PROMPT = """{mission}
 
 You review one automated YouTube channel twice a week for its owner, against the mission above: the fastest safe
 route into YPP. Be concrete and evidence-led.
-Rules: never promise views or earnings; a pattern needs at least 4 videos on each side before you call it proven,
-otherwise label it a hypothesis; respect the channel rules (CHANNEL.md excerpt) and YouTube policy (no faked real
-people or events, no misleading titles); prefer changes the automation can apply itself; rank recommendations by how
-much they shorten the time to the next finish line (subscriber conversion is usually the binding constraint).
+Rules: never promise views or earnings; never state an upload count or cadence that the upload data does not show
+(the About text is the plan, not evidence, and a successful workflow run is not a published video); a pattern
+needs at least 4 videos on each side before you call it proven, otherwise label it a hypothesis; respect the channel
+rules (CHANNEL.md excerpt) and YouTube policy (no faked real people or events, no misleading titles); prefer changes
+the automation can apply itself; rank recommendations by how much they shorten the time to the next finish line
+(subscriber conversion is usually the binding constraint).
 Judge the channel as a YPP reviewer would: could its videos be called template, repetitive, shock-bait or reused?
 Mark a recommendation auto_ok=true only if it is a small, low-risk change to the channel's own code (target "code"),
 for example a title template, a timing window, a topic weight, a caption style, a subscribe prompt, and it does not
@@ -45,7 +47,7 @@ Recent uploads (newest first: hours since publish, views, title):
 Summary: {summary}
 Results of earlier automatic improvements (median views of videos with 24 h+ of data, before vs after):
 {experiments}
-Automation reliability (last 7 days): {reliability}
+Automation reliability (last 7 days; a successful run is not a published video): {reliability}
 Title and tag lint (published titles; deterministic checks): {lint}
 Channel's own learnings file (excerpt):
 {learnings}
@@ -68,7 +70,8 @@ At most 3 focus entries, closest to earning first.
 
 
 FEED_UNKNOWN = ("upload numbers unknown: YouTube's public feed could not be read in this run. This is NOT evidence "
-                "of zero uploads or a stalled channel; judge uploads only from the workflow reliability below")
+                "of zero uploads or a stalled channel, and green workflow runs are not evidence of uploads either: "
+                "state no upload count or cadence")
 MIN_SCORED = 12  # videos with 24 h+ of views before any change may be applied automatically
 RETRY_PAUSE_S = 60  # free-tier Gemini limits are per minute
 
@@ -91,18 +94,37 @@ def uploads_table(vids: list[dict], at: datetime) -> tuple[str, str]:
     return "\n".join(rows) or "(no uploads)", summary
 
 
+RUN_PAGES = 8  # 100 runs a page; a 15-minute cron makes about 300 runs in 7 days (one page was read as a week)
+
+
 def reliability(gh: GitHub, owner: str, ch: dict, at: datetime) -> str:
+    """Failed runs of the last 7 days per workflow. A workflow with no runs, or whose runs can't be read, says so
+    rather than dropping out of the line (a silent drop read as "0 failures")."""
     out = []
+    since = f">={(at - timedelta(days=7)):%Y-%m-%d}"
     for lane in ch.get("lanes", []):
         for wf_file, wf in lane.get("workflows", {}).items():
+            runs, full = [], False
             try:
-                runs = gh.get(f"/repos/{owner}/{lane['repo']}/actions/workflows/{wf_file}/runs", per_page=100)["workflow_runs"]
+                for page in range(1, RUN_PAGES + 1):
+                    got = gh.get(f"/repos/{owner}/{lane['repo']}/actions/workflows/{wf_file}/runs", per_page=100,
+                                 page=page, created=since)["workflow_runs"]
+                    runs += got
+                    full = len(got) == 100
+                    if not full or hours(got[-1]["created_at"], at) > 168:
+                        break
             except Exception:
+                out.append(f"{wf['name']}: run history unreadable")
                 continue
             week = [r for r in runs if hours(r["created_at"], at) <= 168 and r["status"] == "completed" and r["conclusion"] != "skipped"]
-            if week:
-                bad = sum(r["conclusion"] in ("failure", "timed_out") for r in week)
-                out.append(f"{wf['name']}: {bad} of {len(week)} runs failed")
+            if not week:
+                out.append(f"{wf['name']}: no runs in the last 7 days")
+                continue
+            bad = sum(r["conclusion"] in ("failure", "timed_out") for r in week)
+            span = ""
+            if full and hours(runs[-1]["created_at"], at) <= 168:
+                span = f" (only the latest runs, back {hours(runs[-1]['created_at'], at):.0f} h)"
+            out.append(f"{wf['name']}: {bad} of {len(week)} runs failed{span}")
     return "; ".join(out) or "no workflow data"
 
 
@@ -135,6 +157,15 @@ def lint(vids: list[dict], analytics: dict | None) -> list[str]:
     if analytics.get("keywords_machine"):
         out.append(f"channel keywords carry pipeline tags: {', '.join(analytics['keywords_machine'][:5])}")
     return out
+
+
+def api_uploads(analytics: dict | None, at: datetime) -> list[dict]:
+    """The channel's latest public uploads from its own API listing (no views), when that listing is under 48 h old."""
+    analytics = analytics or {}
+    if not analytics.get("recent") or not analytics.get("at") or \
+            at - datetime.fromisoformat(analytics["at"]) > timedelta(hours=48):
+        return []
+    return [{"id": v, "title": t, "published": p, "views": None} for v, t, p, *_ in analytics["recent"] if p]
 
 
 def learnings(gh: GitHub, owner: str, ch: dict) -> tuple[str, str]:
@@ -227,7 +258,12 @@ def main(dry: bool = False):
                 print(f"{ch['name']}: feed unreadable ({type(exc).__name__})")
         table, summary = uploads_table(vids, at)
         analytics = road.get(key, {}).get("analytics")
-        if blind:
+        if blind and (vids := api_uploads(analytics, at)):
+            table, _ = uploads_table(vids, at)
+            week = sum(1 for v in vids if hours(v["published"], at) <= 168)
+            summary = (f"{week} public uploads in the last 7 days among the latest {len(vids)} (the public feed was "
+                       f"unreadable; from the channel's own API listing of {analytics['at'][:16]}, views not included)")
+        elif blind:
             table, summary = "(feed unreadable in this run)", FEED_UNKNOWN
         if not ch.get("youtube"):
             table, summary = "(no YouTube feed configured)", "upload numbers unknown: no public feed is configured for this channel"

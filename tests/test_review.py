@@ -6,6 +6,49 @@ from doctor import growth, review
 AT = datetime(2026, 10, 22, 6, tzinfo=timezone.utc)
 
 
+def _run(h, conclusion="success"):
+    return {"created_at": (AT - timedelta(hours=h)).isoformat(), "status": "completed", "conclusion": conclusion}
+
+
+class PagedGH:
+    """Workflow runs served 100 a page, newest first, like the Actions API."""
+
+    def __init__(self, runs):
+        self.runs, self.calls = runs, []
+
+    def get(self, path, **params):
+        self.calls.append((path, params))
+        wf = path.split("/workflows/")[1].split("/")[0]
+        if wf not in self.runs:
+            raise urllib.error.HTTPError(path, 404, "nf", {}, None)
+        page = params.get("page", 1)
+        return {"workflow_runs": self.runs[wf][(page - 1) * 100:page * 100]}
+
+
+def test_reliability_reads_the_whole_week_and_names_silent_workflows():
+    every_15_min = [_run(i / 4, "failure" if i in (5, 250) else "success") for i in range(280)]
+    gh = PagedGH({"run.yml": every_15_min, "studio.yml": []})
+    ch = {"lanes": [{"repo": "r", "workflows": {"run.yml": {"name": "run"}, "studio.yml": {"name": "studio"},
+                                                 "watchdog.yml": {"name": "watchdog"}}}]}
+    line = review.reliability(gh, "o", ch, AT)
+    # the second failure is on page 3: one page (the old read) would have said 1 of 100
+    assert "run: 2 of 280 runs failed" in line and "only the latest" not in line
+    assert "studio: no runs in the last 7 days" in line and "watchdog: run history unreadable" in line
+    assert all(p["created"] == ">=2026-10-15" for _, p in gh.calls)
+
+
+def test_reliability_says_when_it_could_not_reach_back_a_week():
+    gh = PagedGH({"run.yml": [_run(i / 10) for i in range(1000)]})
+    line = review.reliability(gh, "o", {"lanes": [{"repo": "r", "workflows": {"run.yml": {"name": "run"}}}]}, AT)
+    assert line == f"run: 0 of {100 * review.RUN_PAGES} runs failed (only the latest runs, back 80 h)"
+
+
+def test_feed_unknown_forbids_inferring_uploads_from_green_runs():
+    assert "green workflow runs are not evidence of uploads" in review.FEED_UNKNOWN
+    assert "zero" in review.FEED_UNKNOWN and "unknown" in review.FEED_UNKNOWN
+    assert "the About text is the plan, not evidence" in review.PROMPT
+
+
 def test_title_flags():
     assert review.title_flags("Greece Spends 165.1% Of Its GDP") == ["percentage over 100% (165.1%)"]
     assert review.title_flags("Niger has 0.0 doctors per 1,000 people") == ["zero value '0.0'"]
@@ -26,6 +69,17 @@ def test_lint_merges_feed_and_api_titles_and_reports_pipeline_tags():
     assert "1 of the latest 3 public uploads carry pipeline tags" in flags[2] and "rebuilt-in-3d:wk-Q42" in flags[2]
     assert flags[3] == "channel keywords carry pipeline tags: hindi-news-desk:kh-1f2e"
     assert review.lint([], None) == []
+
+
+def test_api_uploads_stand_in_for_an_unreadable_feed_only_while_fresh():
+    analytics = {"at": (AT - timedelta(hours=20)).isoformat(),
+                 "recent": [["b", "Two", "2026-10-21T08:00:00Z", []], ["a", "One", "2026-10-11T08:00:00Z", []]]}
+    vids = review.api_uploads(analytics, AT)
+    assert [v["id"] for v in vids] == ["b", "a"] and all(v["views"] is None for v in vids)
+    table, summary = review.uploads_table(vids, AT)
+    assert "Two" in table and summary.startswith("1 uploads in the last 7 days")
+    assert review.api_uploads(dict(analytics, at=(AT - timedelta(hours=50)).isoformat()), AT) == []
+    assert review.api_uploads({}, AT) == []
 
 
 def test_prompt_takes_every_field():
