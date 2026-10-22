@@ -40,8 +40,8 @@
       "youtube": "UCtVG78IUTqvP9rH-LLies0A",
       "quiet_h": 30,
       "watch_from": "2026-10-11T12:00:00+00:00",
-      "goal": {"route": "longform"},
-      "about": "Long-form calm deep-time sleep documentaries (about 2 h), one a day, premiere 00:30 UTC; built on GitHub Actions CPU.",
+      "goal": {"route": "both"},
+      "about": "Deep-time channel: daily 'Survive the Night' choice-ladder Shorts (8 options + a sourced verdict; 14:30 UTC, plus 00:30 UTC from launch day 8) and calm 2-3 h sleep documentaries Tue+Fri premiering 21:00 UTC; built on GitHub Actions CPU.",
       "lab": {"language": "en", "experiments": ["comment", "localize", "retitle", "reply"], "languages": ["es", "pt", "de", "fr", "hi"]},
       "lanes": [
         {
@@ -49,7 +49,9 @@
           "mode": "fix",
           "analytics": true,
           "workflows": {
-            "episode.yml": {"name": "episode", "max_h": 30},
+            "episode.yml": {"name": "episode", "max_h": 100},
+            "shorts.yml": {"name": "shorts", "max_h": 30},
+            "shorts-learn.yml": {"name": "shorts-learn"},
             "promote.yml": {"name": "promote"},
             "health.yml": {"name": "health", "max_h": 9, "fix": false},
             "tests.yml": {"name": "tests"}
