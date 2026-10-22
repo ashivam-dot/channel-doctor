@@ -36,10 +36,9 @@
     },
     "pangaea": {
       "name": "Pangaea Nights",
-      "paused": "2026-10-20",
       "youtube": "UCtVG78IUTqvP9rH-LLies0A",
       "quiet_h": 30,
-      "watch_from": "2026-10-11T12:00:00+00:00",
+      "watch_from": "2026-10-23T15:00:00+00:00",
       "goal": {"route": "both"},
       "about": "Deep-time channel: daily 'Survive the Night' choice-ladder Shorts (8 options + a sourced verdict; 14:30 UTC, plus 00:30 UTC from launch day 8) and calm 2-3 h sleep documentaries Tue+Fri premiering 21:00 UTC; built on GitHub Actions CPU.",
       "lab": {"language": "en", "experiments": ["comment", "localize", "retitle", "reply"], "languages": ["es", "pt", "de", "fr", "hi"]},
