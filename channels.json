@@ -51,6 +51,7 @@
             "episode.yml": {"name": "episode", "max_h": 100},
             "shorts.yml": {"name": "shorts", "max_h": 30},
             "shorts-learn.yml": {"name": "shorts-learn"},
+            "topics.yml": {"name": "topics"},
             "promote.yml": {"name": "promote"},
             "health.yml": {"name": "health", "max_h": 9, "fix": false},
             "tests.yml": {"name": "tests"}
