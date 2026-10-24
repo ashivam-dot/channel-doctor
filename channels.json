@@ -40,11 +40,11 @@
       "quiet_h": 30,
       "watch_from": "2026-10-23T15:00:00+00:00",
       "goal": {"route": "both"},
-      "about": "Deep-time channel: daily 'Survive the Night' choice-ladder Shorts (8 options + a sourced verdict; 14:30 UTC, plus 00:30 UTC from launch day 8) and calm 2-3 h sleep documentaries Tue+Fri premiering 21:00 UTC; built on GitHub Actions CPU.",
+      "about": "Deep-time channel: three choice-ladder Shorts daily at 00:30, 14:30 and 19:30 UTC; separate calm two-hour sleep documentaries Tuesday and Friday at 21:00 UTC. Batch releases require complete audiovisual review and owner-visible readback.",
       "lab": {"language": "en", "experiments": ["comment", "localize", "retitle", "reply"], "languages": ["es", "pt", "de", "fr", "hi"]},
       "lanes": [
         {
-          "repo": "pangaea-nights",
+          "repo": "pangaea-nights", "batch_state": "batch-production.json",
           "mode": "fix",
           "analytics": true,
           "workflows": {
@@ -70,11 +70,11 @@
       "quiet_h": 20,
       "watch_from": "2026-10-15T00:00:00+00:00",
       "goal": {"route": "shorts"},
-      "about": "Original Hindi magical and mystery twist-story Shorts (13+, not made for kids): AI folk-fantasy paintings painted on runner CPU, Gemini TTS Charon narrator, 12:30 and 20:30 IST from a ready buffer of finished Shorts.",
+      "about": "Sannatpur Ki Raatein: original Hindi Shorts about a fictional village in 1996, for a general audience aged 13+. Fixed cast and props, Gemini Charon narrator or its tested clone, daily release slots 13:00 and 19:00 IST. Reviewed batch reservations preserve those slots.",
       "lab": {"language": "hi", "experiments": ["comment", "retitle", "reply"]},
       "lanes": [
         {
-          "repo": "kahaani-chaos",
+          "repo": "kahaani-chaos", "batch_state": "batch-production.json",
           "mode": "fix",
           "analytics": true,
           "workflows": {

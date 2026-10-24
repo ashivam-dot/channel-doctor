@@ -3,6 +3,7 @@ Telegram gets new problems at once, reminders every 12 h, a note when they clear
 from __future__ import annotations
 
 import json
+import base64
 import os
 import re
 import statistics
@@ -211,6 +212,36 @@ def never_started(gh: GitHub, repo: str, run: dict) -> bool:
     return bool(jobs) and all(not j.get("steps") for j in jobs)
 
 
+def batch_supply(batch: dict, channel_id: str, at: datetime) -> tuple[list[str], list[str]]:
+    """Count only owner-read-back deliveries and expose holds/stale dispatch even when build jobs are green."""
+    if not batch.get("enabled"):
+        return [], []
+    problems = []
+    jobs = batch.get("jobs", [])
+    counts = {stage: sum(j.get("stage") == stage for j in jobs)
+              for stage in ("planned", "building", "reviewed", "upload_intent", "held", "public", "scheduled")}
+    lines = ["batch: " + ", ".join(f"{n} {k}" for k, n in counts.items() if n)]
+    if batch.get("halted"):
+        problems.append("batch held: " + str(batch["halted"])[:500])
+    if not batch.get("complete") and (not batch.get("updated_at") or hours(batch["updated_at"], at) > 2):
+        problems.append("batch coordinator has not checkpointed within two hours")
+    for job in jobs:
+        stage = job.get("stage")
+        if stage in ("public", "scheduled"):
+            delivery = job.get("delivery", {})
+            seen = delivery.get("owner_readback", {})
+            if not delivery.get("video_id") or seen.get("channel_id") != channel_id or \
+                    seen.get("madeForKids") is not False or seen.get("selfDeclaredMadeForKids") is not False or \
+                    seen.get("uploadStatus") != "processed":
+                problems.append(f"batch {job.get('premise')}: delivery lacks a verified channel/audience/upload readback")
+            if stage == "scheduled" and (seen.get("privacyStatus") != "private" or
+                                          seen.get("publishAt") != job.get("intended_publish_at")):
+                problems.append(f"batch {job.get('premise')}: booked schedule does not match owner readback")
+        elif stage == "upload_intent" and hours(job.get("upload_intent_at") or batch["updated_at"], at) > 1:
+            problems.append(f"batch {job.get('premise')}: upload intent still awaits reconciliation")
+    return problems, lines
+
+
 def check(gh: GitHub, cfg: dict, at: datetime,
           videos: dict[str, list[dict]] | None = None) -> tuple[dict[str, str], dict[str, list[str]]]:
     """Return ({problem key: message}, {channel name: status lines}); `videos` collects each channel's feed."""
@@ -244,6 +275,19 @@ def check(gh: GitHub, cfg: dict, at: datetime,
                 lines.append(f"feed unreadable ({type(exc).__name__})")
         for lane in ch.get("lanes", []):
             repo = f"{owner}/{lane['repo']}"
+            if lane.get("batch_state") and not ch.get("paused"):
+                try:
+                    content = gh.get(f"/repos/{repo}/contents/{lane['batch_state']}", ref="state")
+                    batch = json.loads(base64.b64decode(content["content"]))
+                    found, text = batch_supply(batch, ch.get("youtube", ""), at)
+                    lines.extend(text)
+                    for i, problem in enumerate(found):
+                        problems[f"batch:{lane['repo']}:{i}"] = f"{ch['name']}: {problem}"
+                except urllib.error.HTTPError as exc:
+                    if exc.code != 404:  # absent before initial batch activation
+                        lines.append(f"batch state unreadable (HTTP {exc.code})")
+                except (ValueError, KeyError, TypeError):
+                    problems[f"batch:{lane['repo']}:invalid"] = f"{ch['name']}: unreadable batch state"
             for wf_file, wf in lane.get("workflows", {}).items():
                 base = f"/repos/{repo}/actions/workflows/{wf_file}"
                 try:

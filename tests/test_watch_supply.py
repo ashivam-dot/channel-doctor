@@ -56,3 +56,23 @@ def test_an_unreadable_feed_is_unknown_not_zero(monkeypatch):
     problems, status = watch.check(FakeGH({}, {}), cfg, AT)
     assert problems == {"blind:feeds": "YouTube feeds answered for no channel: the upload watch is blind"}
     assert "zero" in review.FEED_UNKNOWN and "unknown" in review.FEED_UNKNOWN
+
+
+def test_green_builds_cannot_hide_a_held_or_stale_batch():
+    batch = {"enabled": True, "updated_at": _ago(3), "halted": "wrong radio scene", "jobs": []}
+    problems, lines = watch.batch_supply(batch, "UCa", AT)
+    assert any("wrong radio" in p for p in problems)
+    assert any("two hours" in p for p in problems)
+
+
+def test_a_planned_slot_is_not_counted_as_a_verified_youtube_schedule():
+    batch = {"enabled": True, "updated_at": _ago(0), "jobs": [
+        {"premise": "e01", "stage": "scheduled", "intended_publish_at": "2026-10-14T07:30:00Z"}]}
+    problems, _ = watch.batch_supply(batch, "UCa", AT)
+    assert any("readback" in p for p in problems)
+    batch["jobs"][0]["delivery"] = {"video_id": "v1", "owner_readback": {
+        "channel_id": "UCa", "madeForKids": False, "selfDeclaredMadeForKids": False,
+        "uploadStatus": "processed", "privacyStatus": "private", "publishAt": "2026-10-14T07:30:00Z"}}
+    assert watch.batch_supply(batch, "UCa", AT)[0] == []
+    batch["jobs"][0]["delivery"]["owner_readback"]["channel_id"] = "wrong-channel"
+    assert watch.batch_supply(batch, "UCa", AT)[0]
