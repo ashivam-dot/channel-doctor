@@ -237,6 +237,8 @@ def batch_supply(batch: dict, channel_id: str, at: datetime) -> tuple[list[str],
             if stage == "scheduled" and (seen.get("privacyStatus") != "private" or
                                           seen.get("publishAt") != job.get("intended_publish_at")):
                 problems.append(f"batch {job.get('premise')}: booked schedule does not match owner readback")
+            if stage == "public" and seen.get("privacyStatus") != "public":
+                problems.append(f"batch {job.get('premise')}: public release is not confirmed by owner readback")
         elif stage == "upload_intent" and hours(job.get("upload_intent_at") or batch["updated_at"], at) > 1:
             problems.append(f"batch {job.get('premise')}: upload intent still awaits reconciliation")
     return problems, lines

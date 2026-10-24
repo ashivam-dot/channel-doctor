@@ -76,3 +76,13 @@ def test_a_planned_slot_is_not_counted_as_a_verified_youtube_schedule():
     assert watch.batch_supply(batch, "UCa", AT)[0] == []
     batch["jobs"][0]["delivery"]["owner_readback"]["channel_id"] = "wrong-channel"
     assert watch.batch_supply(batch, "UCa", AT)[0]
+
+
+def test_a_public_claim_requires_an_actually_public_owner_readback():
+    job = {"premise": "e01", "stage": "public", "delivery": {
+        "video_id": "v1", "owner_readback": {"channel_id": "UCa", "madeForKids": False,
+        "selfDeclaredMadeForKids": False, "uploadStatus": "processed", "privacyStatus": "private"}}}
+    batch = {"enabled": True, "updated_at": _ago(0), "jobs": [job]}
+    assert any("public release" in p for p in watch.batch_supply(batch, "UCa", AT)[0])
+    job["delivery"]["owner_readback"]["privacyStatus"] = "public"
+    assert watch.batch_supply(batch, "UCa", AT)[0] == []
