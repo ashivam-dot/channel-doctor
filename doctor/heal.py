@@ -2,6 +2,7 @@
 apply the central review's safe improvements."""
 from __future__ import annotations
 
+import base64
 import json
 import re
 import urllib.error
@@ -78,6 +79,11 @@ class Healer:
         if not self.dry and any(e.get("run") == int(run_id) and e.get("attempt") == run["run_attempt"] for e in self.events):
             print("this attempt was already handled")
             return
+
+        if reason := self.batch_recovery_guard(run_id, wf_file):
+            rec = {"at": iso(), "run": int(run_id), "attempt": run["run_attempt"], "workflow": wf_name,
+                   "kind": "batch-owned", "evidence": reason[:200], "fp": fingerprint(wf_name, "batch-owned")}
+            return self.finish(rec, "batch-owned", reason, None, url)
 
         if gap:
             return self.heal_silent(run, gap, wf_name, wf_file, url, default)
@@ -162,6 +168,37 @@ class Healer:
             return self.finish(rec, "escalated", msg + f"(No code change: {why}.)", notify, url)
 
         self.attempt(rec, wf_name, wf_file, steps, log, extra, url, default)
+
+    def batch_recovery_guard(self, run_id: str, workflow: str) -> str | None:
+        """The durable media coordinator owns batch retries, holds, source repairs and upload intents.
+
+        Retrying just a failed publish job can reuse refused media and an obsolete script. The doctor must
+        neither rerun nor patch that production behind the coordinator's exact-media checks.
+        """
+        if workflow not in {"run.yml", "shorts.yml", "batch-release.yml"} or not (
+                self.target / "strategy" / "batch-2026-10-25.json").is_file():
+            return None
+        try:
+            row = self.gh.get(f"/repos/{self.repo}/contents/batch-production.json", ref="state")
+            data = json.loads(base64.b64decode(row["content"], validate=False))
+            jobs = data["jobs"]
+            if not isinstance(jobs, list) or not jobs or not all(isinstance(j, dict) for j in jobs):
+                raise ValueError("invalid batch jobs")
+            if any(not isinstance(j.get(field, []), list) for j in jobs
+                   for field in ("obsolete_runs", "repair_history")):
+                raise ValueError("invalid batch run history")
+        except (KeyError, ValueError, TypeError, urllib.error.URLError, TimeoutError):
+            return "Batch recovery state is unavailable; preserve all holds and intents for coordinator reconciliation."
+        number = int(run_id)
+        for job in jobs:
+            owned = [job.get("run_id"), *job.get("obsolete_runs", []),
+                     *(h.get("run_id") for h in job.get("repair_history", []) if isinstance(h, dict))]
+            if number in owned:
+                return (f"Batch entry {job.get('premise', '?')} ({job.get('stage', 'unknown')}) owns this run. "
+                        "Its coordinator must reconcile exact media, holds and upload markers; no doctor rerun or code change.")
+        if data.get("enabled") and any(j.get("stage") not in {"public", "scheduled"} for j in jobs):
+            return "An active reviewed batch owns this producer's calendar; preserve its coordinator and reserved deliveries."
+        return None
 
     # ---- green run, silent or defective channel -------------------------------------------------------------
     def silent(self) -> tuple[str, str] | None:
