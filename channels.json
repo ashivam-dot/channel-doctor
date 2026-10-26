@@ -9,6 +9,7 @@
   "channels": {
     "kyun-hua": {
       "name": "Kyun Hua",
+      "paused": "2026-10-27",
       "youtube": "UCS-lEPHkz_dftfUjjeTuxOA",
       "quiet_h": 10,
       "min_24h": 3,
@@ -36,6 +37,7 @@
     },
     "pangaea": {
       "name": "Pangaea Nights",
+      "paused": "2026-10-27",
       "youtube": "UCtVG78IUTqvP9rH-LLies0A",
       "quiet_h": 30,
       "watch_from": "2026-10-23T15:00:00+00:00",
@@ -66,6 +68,7 @@
     },
     "kahaani-chaos": {
       "name": "Kahaani Chaos",
+      "paused": "2026-10-27",
       "youtube": "UCX-96TVtOBCEkDMloHuYAHw",
       "quiet_h": 20,
       "watch_from": "2026-10-15T00:00:00+00:00",
