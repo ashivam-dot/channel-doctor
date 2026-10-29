@@ -1,43 +1,51 @@
 {
- "at": "2026-10-26T04:07:41+00:00",
+ "at": "2026-10-29T04:16:16+00:00",
  "channels": {
   "kyun-hua": {
    "name": "Kyun Hua",
-   "summary": "at least 12 public uploads in the last 7 days among the latest 12 (the public feed was unreadable; from the channel's own API listing of 2026-10-25T15:04, views not included)",
-   "road": "23 subscribers (2.5 subscribers per 1,000 views); route both; 98 days to the deadline; 0.8 subscribers/day; expanded sub line ~607 days away; full sub line ~1243 days away; exact: Shorts views 90d 4724, long-form hours 365d 0.0, net subscribers 28d 9; go/no-go: 4,000 h by 15 Dec: have 0.0, need 78.4 h/day, pace 0.0 h/day: NO-GO (pace 0.0% of the need); 8,000 h by 1 Feb (doubled bar): have 0.0, need 80.8 h/day, pace 0.0 h/day: NO-GO (pace 0.0% of the need); 10M qualified views/90d by 15 Dec: have 4,724, need 196,038/day, pace 52/day: NO-GO (pace 0.0% of the need); 20M qualified views/90d by 1 Feb (doubled bar): have 4,724, need 202,020/day, pace 52/day: NO-GO (pace 0.0% of the need)",
-   "health": "The channel is far behind the required YPP pace for both watch hours and Shorts views, with subscriber conversion at 2.5 per 1,000 views.",
+   "summary": "upload numbers unknown: YouTube's public feed could not be read in this run. This is NOT evidence of zero uploads or a stalled channel, and green workflow runs are not evidence of uploads either: state no upload count or cadence",
+   "road": "23 subscribers (2.3 subscribers per 1,000 views); route both; 95 days to the deadline; 0.7 subscribers/day; expanded sub line ~668 days away; full sub line ~1368 days away; exact: Shorts views 90d 5104, long-form hours 365d 0.0, net subscribers 28d 9; go/no-go: 4,000 h by 15 Dec: have 0.0, need 83.3 h/day, pace 0.0 h/day: NO-GO (pace 0.0% of the need); 8,000 h by 1 Feb (doubled bar): have 0.0, need 83.3 h/day, pace 0.0 h/day: NO-GO (pace 0.0% of the need); 10M qualified views/90d by 15 Dec: have 5,104, need 208,284/day, pace 57/day: NO-GO (pace 0.0% of the need); 20M qualified views/90d by 1 Feb (doubled bar): have 5,104, need 208,333/day, pace 57/day: NO-GO (pace 0.0% of the need)",
+   "health": "The channel holds 23 subscribers with 5,104 90-day Shorts views, currently pacing far behind the YPP deadline while 42 of 261 automation runs failed and the public upload feed was unreadable.",
    "working": [
-    "India-focused news topics show a positive trend hypothesis compared to global news (region:india x1.097 lift vs region:world x0.86 lift).",
-    "Specific category topics like attack (x1.344 lift) and court rulings (x1.186 lift) show hypotheses of higher retention and view spikes."
+    "Domestic Indian topics demonstrate stronger engagement, with region:india showing a hypothesized x1.11 lift (49 typical views) and lane:naam-niyam showing a hypothesized x1.132 lift across historical scored items.",
+    "Specific high-consequence incident categories exhibit above-baseline interest, led by category:attack (hypothesized x1.35 lift, 59.9% retention) and category:court (hypothesized x1.241 lift, 56.2% retention)."
    ],
    "not_working": [
-    "World news and generic 'other' lane content severely underperform (lane:other lift x0.75, 17 typical views).",
-    "Current subscriber acquisition rate of 0.8 subscribers/day is insufficient to hit the 500 subscriber expanded YPP threshold before the deadline."
+    "Pipeline reliability is degraded, logging 42 failed runs out of 261 in the past 7 days, which threatens the channel's core timing-first model.",
+    "International and uncategorized topics underperform significantly, with category:world recording a hypothesized x0.75 lift (19 typical views) and lane:other at x0.75 lift (16 typical views).",
+    "Subscriber acquisition remains the primary bottleneck, standing at 2.3 subscribers per 1,000 views and 23 total subscribers against the 500-subscriber Expanded YPP target."
    ],
-   "ypp_lever": "Maximize subscriber conversion by embedding a prominent channel promise and end-screen call-to-subscribe in every Short while restricting content exclusively to high-performing Indian news categories.",
+   "ypp_lever": "Eliminate low-retention world topics to focus entirely on high-performing Indian legal, incident, and naam-niyam explainers, while integrating an explicit Hindi call-to-subscribe in the final seconds to double subscriber conversion from 2.3 per 1,000 views.",
    "inauthentic_risk": {
     "level": "medium",
-    "why": "Automated Gemini TTS audio paired with image parallax effects risks being categorized as templated repetitive content by YPP reviewers unless scripts provide clear original commentary and narrative structure."
+    "why": "Faceless news explainers using automated Gemini TTS over stock Creative Commons photos risk rejection for repetitive, template-based news aggregation. The script generator must enforce distinct editorial narrative beats, original analysis, and transparent sourcing on all stories."
    },
    "recommendations": [
     {
-     "change": "Incorporate a clear spoken call-to-subscribe and visual banner in the last 5 seconds of every Short.",
-     "evidence": "Channel sits at 23 subscribers with a 2.5 subs/1k views rate, leaving the expanded threshold ~607 days away at current velocity.",
+     "change": "Deprecate category:world and lane:other ingestion in desk/news.py to concentrate production on domestic Indian news and legal rulings.",
+     "evidence": "category:world records a hypothesized x0.75 lift (19 typical views) versus region:india at x1.11 (49 typical views) and category:court at x1.241 (70 typical views).",
+     "target": "topics",
+     "risk": "low",
+     "auto_ok": false
+    },
+    {
+     "change": "Implement an end-screen spoken prompt and Devanagari text overlay inviting viewers to subscribe for ongoing legal and incident explainers.",
+     "evidence": "Subscriber conversion sits at 2.3 subscribers per 1,000 views, leaving the channel 477 subscribers short of the initial 500 threshold.",
      "target": "format",
      "risk": "low",
      "auto_ok": false
     },
     {
-     "change": "Restrict topic intake to high-performing Indian categories (attack, court, aviation) and stop generating world region stories.",
-     "evidence": "Hypothesis based on category data shows attack at x1.344 lift (76 typical views) and court at x1.186 lift vs world region at x0.86 lift (33 typical views).",
-     "target": "topics",
-     "risk": "low",
+     "change": "Investigate and resolve workflow execution errors that caused 42 failed automation runs out of 261 over the last 7 days.",
+     "evidence": "A 16% run failure rate directly impairs the channel's timing-first strategy of publishing while stories trend on Google News and Trends.",
+     "target": "ops",
+     "risk": "medium",
      "auto_ok": false
     },
     {
-     "change": "Filter out generic stories categorized under lane:other from the content pipeline.",
-     "evidence": "Hypothesis data shows lane:other content yields the lowest performance with a x0.75 ranking lift across 15 Shorts.",
-     "target": "topics",
+     "change": "Repair the feed scraper to fix the unreadable YouTube public feed error and restore upload monitoring.",
+     "evidence": "Public feed unreadable in this run prevented audit of recent uploads, cadence verification, and fresh view counts.",
+     "target": "ops",
      "risk": "low",
      "auto_ok": false
     }
@@ -46,8 +54,46 @@
   },
   "pangaea": {
    "name": "Pangaea Nights",
-   "summary": "4 public uploads in the last 7 days among the latest 14 (the public feed was unreadable; from the channel's own API listing of 2026-10-24T15:01, views not included)",
-   "road": "25 subscribers (85.6 subscribers per 1,000 views); route both; 98 days to the deadline; 0.2 subscribers/day; expanded sub line ~2217 days away; full sub line ~4550 days away; exact: Shorts views 90d 162, long-form hours 365d 0.5, net subscribers 28d 4; go/no-go: 4,000 h by 15 Dec: have 0.5, need 78.4 h/day, pace 0.0 h/day: NO-GO (pace 0.0% of the need); 8,000 h by 1 Feb (doubled bar): have 0.5, need 80.8 h/day, pace 0.0 h/day: NO-GO (pace 0.0% of the need); 10M qualified views/90d by 15 Dec: have 162, need 196,077/day, pace 2/day: NO-GO (pace 0.0% of the need); 20M qualified views/90d by 1 Feb (doubled bar): have 162, need 202,020/day, pace 2/day: NO-GO (pace 0.0% of the need)",
+   "summary": "upload numbers unknown: YouTube's public feed could not be read in this run. This is NOT evidence of zero uploads or a stalled channel, and green workflow runs are not evidence of uploads either: state no upload count or cadence",
+   "road": "29 subscribers (16.4 subscribers per 1,000 views); route both; 95 days to the deadline; 0.4 subscribers/day; expanded sub line ~1099 days away; full sub line ~2266 days away; Shorts-views and watch-hour totals unavailable (public numbers only); go/no-go: watch hours and qualified views unknown (no fresh Analytics numbers for this channel)",
+   "health": "Pangaea Nights demonstrates strong subscriber conversion efficiency but suffers from high operational failure rates and metadata leakage.",
+   "working": [
+    "High subscriber conversion rate of 16.4 subscribers per 1,000 views.",
+    "Strict automated quality gates maintaining policy compliance and fact checking."
+   ],
+   "not_working": [
+    "High workflow instability with 32 of 110 Shorts runs and 6 of 21 health runs failing in the last 7 days.",
+    "Internal pipeline tracking tags leaking into public tags on 14 of 14 analyzed uploads.",
+    "Unreadable public feed preventing verification of recent watch hours and view trends."
+   ],
+   "ypp_lever": "Fix publishing reliability and leverage the strong 16.4 sub conversion rate via compliant in-video prompts to reach the 500-subscriber threshold faster.",
+   "inauthentic_risk": {
+    "level": "low",
+    "why": "Videos use Wikipedia fact-checking and unique visuals, but public exposure of internal pipeline tags risks looking like uncurated automated spam to a human YPP reviewer. Fix by scrubbing internal tags prior to upload."
+   },
+   "recommendations": [
+    {
+     "change": "Strip internal pipeline tags from public video upload metadata.",
+     "evidence": "14 of 14 public uploads contain internal tracking tags like pangaea-nights:2026-10-23-last-day-dinosaurs.",
+     "target": "code",
+     "risk": "low",
+     "auto_ok": false
+    },
+    {
+     "change": "Investigate and resolve recurring Shorts pipeline errors to stabilize publishing reliability.",
+     "evidence": "32 of 110 Shorts runs failed in the last 7 days.",
+     "target": "ops",
+     "risk": "medium",
+     "auto_ok": false
+    },
+    {
+     "change": "Include a soft, permitted call-to-subscribe line in the opening chapter of long-form documentaries to maximize sub growth.",
+     "evidence": "Channel converts 16.4 subscribers per 1,000 views but needs 471 more subscribers to reach expanded YPP.",
+     "target": "format",
+     "risk": "low",
+     "auto_ok": false
+    }
+   ],
    "title_lint": [
     "14 of the latest 14 public uploads carry pipeline tags in their public tags (e.g. Y_zpVf53Hwc: pangaea-nights:2026-10-23-last-day-dinosaurs)"
    ]
@@ -55,37 +101,197 @@
   "kahaani-chaos": {
    "name": "Kahaani Chaos",
    "summary": "upload numbers unknown: YouTube's public feed could not be read in this run. This is NOT evidence of zero uploads or a stalled channel, and green workflow runs are not evidence of uploads either: state no upload count or cadence",
-   "road": "16 subscribers (250.0 subscribers per 1,000 views); route shorts; 98 days to the deadline; -0.1 subscribers/day; expanded sub line unknown pace; full sub line unknown pace; exact: Shorts views 90d 127, long-form hours 365d 0.6, net subscribers 28d -3; go/no-go: 10M qualified views/90d by 15 Dec: have 127, need 196,077/day, pace 1/day: NO-GO (pace 0.0% of the need); 20M qualified views/90d by 1 Feb (doubled bar): have 127, need 202,020/day, pace 1/day: NO-GO (pace 0.0% of the need)",
+   "road": "16 subscribers (213.3 subscribers per 1,000 views); route shorts; 95 days to the deadline; -0.1 subscribers/day; expanded sub line unknown pace; full sub line unknown pace; Shorts-views and watch-hour totals unavailable (public numbers only)",
+   "health": "The channel maintains strong subscriber conversion metrics despite very low view counts and recent public feed reading issues.",
+   "working": [
+    "High subscriber conversion rate relative to view count (213.3 subscribers per 1,000 views)",
+    "Strict worldbuilding and editorial rules enforce original fictional narrative value and prevent policy violations",
+    "Automation health remains steady with 0 test failures across 128 recent runs"
+   ],
+   "not_working": [
+    "Overall reach is minimal, averaging just 4 views at 48 hours per Short",
+    "Public upload feed was unreadable in this run, preventing recent publish tracking",
+    "Net daily subscriber growth is slightly negative (-0.1 subscribers per day)"
+   ],
+   "ypp_lever": "Drive watch time and view counts by improving the first-30-second retention hook and visual variety in micro-entry Shorts to exit the low-reach baseline.",
+   "inauthentic_risk": {
+    "level": "low",
+    "why": "Specific 1996 historical world-building, original Hindi narrative voice, fixed character cast, and strict editorial red lines prevent repetitive or template content flags during YPP review."
+   },
+   "recommendations": [
+    {
+     "change": "Incorporate a direct spoken or visually pinned subscribe prompt during the final 3 seconds of each Short.",
+     "evidence": "Subscriber conversion is high (213.3 per 1k views) but current sub growth is -0.1/day; capturing active viewers accelerates subscriber counts.",
+     "target": "format",
+     "risk": "low",
+     "auto_ok": false
+    },
+    {
+     "change": "Refine the opening 3-second visual and audio hooks in story drafts to increase initial viewer retention percentage.",
+     "evidence": "Viewer retention drops significantly on low-performing Shorts (e.g., kc-20261018-0629 had 0.0% avg percent viewed).",
+     "target": "code",
+     "risk": "low",
+     "auto_ok": false
+    },
+    {
+     "change": "Investigate and fix the public feed reading error in the YouTube scraping module to restore upload visibility.",
+     "evidence": "Public feed unreadable in this run, hiding publication status despite successful automation runs.",
+     "target": "ops",
+     "risk": "medium",
+     "auto_ok": false
+    }
+   ],
    "title_lint": []
   },
   "orbitwire": {
    "name": "Orbitwire",
-   "summary": "at least 6 public uploads in the last 7 days among the latest 6 (the public feed was unreadable; from the channel's own API listing of 2026-10-25T15:02, views not included)",
-   "road": "34 subscribers (1.9 subscribers per 1,000 views); route both; 98 days to the deadline; 1.7 subscribers/day; expanded sub line ~272 days away; full sub line ~564 days away; exact: Shorts views 90d 11916, long-form hours 365d 0.0, net subscribers 28d 34; go/no-go: 4,000 h by 15 Dec: have 0.0, need 78.4 h/day, pace 0.0 h/day: NO-GO (pace 0.0% of the need); 8,000 h by 1 Feb (doubled bar): have 0.0, need 80.8 h/day, pace 0.0 h/day: NO-GO (pace 0.0% of the need); 10M qualified views/90d by 15 Dec: have 11,916, need 195,977/day, pace 132/day: NO-GO (pace 0.1% of the need); 20M qualified views/90d by 1 Feb (doubled bar): have 11,916, need 202,020/day, pace 132/day: NO-GO (pace 0.1% of the need)",
+   "summary": "7 public uploads in the last 7 days among the latest 9 (the public feed was unreadable; from the channel's own API listing of 2026-10-28T15:27, views not included)",
+   "road": "43 subscribers (2.0 subscribers per 1,000 views); route both; 95 days to the deadline; 2.1 subscribers/day; expanded sub line ~221 days away; full sub line ~462 days away; exact: Shorts views 90d 12722, long-form hours 365d 0.0, net subscribers 28d 34; go/no-go: 4,000 h by 15 Dec: have 0.0, need 83.3 h/day, pace 0.0 h/day: NO-GO (pace 0.0% of the need); 8,000 h by 1 Feb (doubled bar): have 0.0, need 83.3 h/day, pace 0.0 h/day: NO-GO (pace 0.0% of the need); 10M qualified views/90d by 15 Dec: have 12,722, need 208,210/day, pace 141/day: NO-GO (pace 0.1% of the need); 20M qualified views/90d by 1 Feb (doubled bar): have 12,722, need 208,333/day, pace 141/day: NO-GO (pace 0.1% of the need)",
+   "health": "Orbitwire is severely off-pace for YPP deadlines with 43 subscribers and 12,722 Shorts views, while automation experiences noticeable run failure rates.",
+   "working": [
+    "Obituary content demonstrates positive relative performance, with kind:death generating a 1.206x lift and 290 typical views.",
+    "Publishing consistency remains active with 7 public uploads in the last 7 days."
+   ],
+   "not_working": [
+    "Overall Shorts view pace of 141 views/day is vastly below the required 208,210 views/day needed for YPP qualification.",
+    "Topics like earthquakes (0.75x lift, 54 typical views) and protests (0.893x lift) underperform the baseline.",
+    "Automation reliability is compromised, recording 46 failed runs out of 287 in the last 7 days."
+   ],
+   "ypp_lever": "Focus topic selection primarily on notable obituaries while incorporating explicit subscriber prompts in every Short, maximizing conversion on the channel's highest-performing content type.",
+   "inauthentic_risk": {
+    "level": "medium",
+    "why": "High volume of automated obituary recaps risks being flagged by YouTube reviewers as repetitive, template-driven, or reused content unless each video provides distinct editorial narrative, photo variety, and original insight."
+   },
+   "recommendations": [
+    {
+     "change": "Adjust topic weights to prioritize high-performing obituary content and reduce or suspend coverage of low-performing earthquake and protest stories.",
+     "evidence": "Hypothesis based on learning logs: kind:death shows a 1.206x lift (290 typical views) compared to kind:quake at 0.75x lift (54 typical views) and category:protest at 0.893x lift.",
+     "target": "topics",
+     "risk": "low",
+     "auto_ok": false
+    },
+    {
+     "change": "Include a standardized spoken and visual call-to-subscribe prompt in the concluding 5 seconds of each Short.",
+     "evidence": "Channel sits at 43 subscribers with a conversion rate of 2.0 subscribers per 1,000 views, making subscriber growth the primary bottleneck.",
+     "target": "format",
+     "risk": "low",
+     "auto_ok": false
+    },
+    {
+     "change": "Audit automation workflow error logs to fix the root causes of job failures.",
+     "evidence": "Automation reliability data shows 46 of 287 runs failed over the last 7 days.",
+     "target": "ops",
+     "risk": "medium",
+     "auto_ok": false
+    }
+   ],
    "title_lint": []
   },
   "atlas": {
    "name": "Atlas in Numbers",
    "summary": "upload numbers unknown: YouTube's public feed could not be read in this run. This is NOT evidence of zero uploads or a stalled channel, and green workflow runs are not evidence of uploads either: state no upload count or cadence",
-   "road": "24 subscribers (0.6 subscribers per 1,000 views); route both; 98 days to the deadline; 1.5 subscribers/day; expanded sub line ~317 days away; full sub line ~651 days away; Shorts-views and watch-hour totals unavailable (public numbers only); go/no-go: watch hours and qualified views unknown (no fresh Analytics numbers for this channel)",
+   "road": "24 subscribers (0.6 subscribers per 1,000 views); route both; 95 days to the deadline; 1.0 subscribers/day; expanded sub line ~476 days away; full sub line ~976 days away; Shorts-views and watch-hour totals unavailable (public numbers only); go/no-go: watch hours and qualified views unknown (no fresh Analytics numbers for this channel)",
+   "health": "Channel health is uncertain due to an unreadable public feed and an elevated publisher failure rate, while conversion sits at a low 0.6 subscribers per 1,000 views.",
+   "working": [
+    "Scout automation is fully reliable with 0 of 7 runs failing over the last 7 days",
+    "Title and tag deterministic checks flagged zero compliance or formatting issues"
+   ],
+   "not_working": [
+    "Publisher reliability is impaired, with 20 of 85 workflow runs failing in the last 7 days",
+    "YouTube public feed is currently unreadable, preventing verification of upload history and video performance",
+    "Subscriber conversion rate is low at 0.6 subscribers per 1,000 views, putting the expanded threshold ~476 days out"
+   ],
+   "ypp_lever": "Fix pipeline publishing reliability to restore consistent daily delivery, followed by embedding an explicit on-screen visual CTA to raise subscriber conversion well above 0.6 per 1,000 views.",
+   "inauthentic_risk": {
+    "level": "medium",
+    "why": "A purely photoreal globe template running automated datasets risks being classified as repetitive or templated content; ensure each Short includes distinct narrative framing, varied visual focal points, and clear source attribution."
+   },
+   "recommendations": [
+    {
+     "change": "Investigate and resolve publisher workflow failures to stabilise publishing reliability",
+     "evidence": "20 of 85 publisher runs failed over the last 7 days",
+     "target": "ops",
+     "risk": "low",
+     "auto_ok": false
+    },
+    {
+     "change": "Restore public feed accessibility or fetch analytics via API to re-establish performance visibility",
+     "evidence": "YouTube public feed was unreadable in this run and 0 videos currently have 24 h data recorded",
+     "target": "ops",
+     "risk": "low",
+     "auto_ok": false
+    },
+    {
+     "change": "Test an explicit on-screen hook and visual subscription prompt in the globe animation format",
+     "evidence": "Channel converts at only 0.6 subscribers per 1,000 views, with full YPP ~976 days away at current velocity (hypothesis)",
+     "target": "format",
+     "risk": "low",
+     "auto_ok": false
+    },
+    {
+     "change": "Audit globe dataset templates to inject unique contextual storytelling and avoid repetitive automated visual patterns",
+     "evidence": "Template-based data Shorts face human-review scrutiny for inauthentic or repetitive content under YPP rules",
+     "target": "topics",
+     "risk": "medium",
+     "auto_ok": false
+    }
+   ],
    "title_lint": []
   },
   "mool-katha": {
    "name": "Mool Katha",
    "summary": "upload numbers unknown: YouTube's public feed could not be read in this run. This is NOT evidence of zero uploads or a stalled channel, and green workflow runs are not evidence of uploads either: state no upload count or cadence",
-   "road": "4 subscribers (4.1 subscribers per 1,000 views); route shorts; 98 days to the deadline; 0.1 subscribers/day; expanded sub line ~3472 days away; full sub line ~6972 days away; Shorts-views and watch-hour totals unavailable (public numbers only)",
+   "road": "4 subscribers (4.1 subscribers per 1,000 views); route shorts; 95 days to the deadline; 0.1 subscribers/day; expanded sub line ~3472 days away; full sub line ~6972 days away; Shorts-views and watch-hour totals unavailable (public numbers only)",
+   "health": "Channel automation is unreliable with failing analytics/watchdog workflows and an unreadable feed, keeping it critically far from YPP targets.",
+   "working": [
+    "Owner alert workflows are running reliably with 0 failures out of 62 runs.",
+    "Subscriber conversion rate is at 4.1 subscribers per 1,000 views."
+   ],
+   "not_working": [
+    "Control analytics and watchdog runs failed completely (16 of 16 runs failed).",
+    "Lite lane content automation had a high failure rate (5 of 13 runs failed).",
+    "YouTube public feed could not be read, preventing upload count and performance verification."
+   ],
+   "ypp_lever": "Restore automation reliability and feed reading to ensure content publishes consistently and performance can be evaluated against YPP milestones.",
+   "inauthentic_risk": {
+    "level": "medium",
+    "why": "Automated Hindi scripture story Shorts risk being flagged by YPP reviewers for repetitive or templated visuals and voiceovers unless each video features distinct story arcs, custom visual elements, and unique commentary."
+   },
+   "recommendations": [
+    {
+     "change": "Repair the control analytics and watchdog workflow failures to restore channel metric tracking.",
+     "evidence": "16 of 16 control analytics and watchdog runs failed over the last 7 days.",
+     "target": "ops",
+     "risk": "medium",
+     "auto_ok": false
+    },
+    {
+     "change": "Fix execution errors in the Lite lane automated publishing pipeline to prevent dropped uploads.",
+     "evidence": "5 of 13 Lite lane runs failed in the past 7 days.",
+     "target": "ops",
+     "risk": "medium",
+     "auto_ok": false
+    },
+    {
+     "change": "Test a hypothesis of incorporating a clear, contextual spoken or pinned subscribe prompt tailored to scripture story endings.",
+     "evidence": "Current subscriber pace projects ~3,472 days to expanded YPP line with 0 videos currently having 24h+ verified data.",
+     "target": "format",
+     "risk": "low",
+     "auto_ok": false
+    }
+   ],
    "title_lint": []
   },
   "scam-autopsy": {
    "name": "Scam Autopsy",
    "summary": "upload numbers unknown: YouTube's public feed could not be read in this run. This is NOT evidence of zero uploads or a stalled channel, and green workflow runs are not evidence of uploads either: state no upload count or cadence",
-   "road": "4 subscribers (58.8 subscribers per 1,000 views); route longform; 98 days to the deadline; 0.0 subscribers/day; expanded sub line unknown pace; full sub line unknown pace; Shorts-views and watch-hour totals unavailable (public numbers only); go/no-go: watch hours and qualified views unknown (no fresh Analytics numbers for this channel)",
+   "road": "4 subscribers (58.8 subscribers per 1,000 views); route longform; 95 days to the deadline; 0.0 subscribers/day; expanded sub line unknown pace; full sub line unknown pace; Shorts-views and watch-hour totals unavailable (public numbers only); go/no-go: watch hours and qualified views unknown (no fresh Analytics numbers for this channel)",
    "title_lint": []
   },
   "universe": {
    "name": "Universe Receipts",
    "summary": "upload numbers unknown: YouTube's public feed could not be read in this run. This is NOT evidence of zero uploads or a stalled channel, and green workflow runs are not evidence of uploads either: state no upload count or cadence",
-   "road": "105 subscribers (2.6 subscribers per 1,000 views); route shorts; 98 days to the deadline; 4.1 subscribers/day; expanded sub line ~97 days away; full sub line ~220 days away; Shorts-views and watch-hour totals unavailable (public numbers only)",
+   "road": "106 subscribers (2.8 subscribers per 1,000 views); route shorts; 95 days to the deadline; 3.1 subscribers/day; expanded sub line ~125 days away; full sub line ~284 days away; Shorts-views and watch-hour totals unavailable (public numbers only)",
    "title_lint": []
   }
  },
