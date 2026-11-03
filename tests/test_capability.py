@@ -91,6 +91,23 @@ def test_quality_looks_at_recent_uploads_and_duplicates_only():
     assert "lower case" in watch.quality(ch, [vid("places Where X Is", 1)], AT, fixed_since)
 
 
+def test_search_metadata_defects_are_caught_and_clean_metadata_passes():
+    murasu = "Sources:\nhttps://www.ndtv.com/india-news/cyclone-12274520#publisher=newsstand\n\n#cyclone #Murasu #news"
+    assert "link fragment read as hashtag '#publisher'" in watch.metadata_problems("Cyclone Murasu Hits", murasu)
+    assert any("accents of 'Fátima'" in p for p in
+               watch.metadata_problems("Fátima Báñez Dies at 59", "x\n#FtimaBez #politician #news"))
+    assert watch.metadata_problems("Fátima Báñez Dies at 59", "x\n#FatimaBanez #politician #news") == []
+    assert "spam hashtags #fyp #viral" in watch.metadata_problems("T", "#space #viral #fyp")
+    assert "16 hashtags" in watch.metadata_problems("T", " ".join(f"#tag{i}" for i in range(16)))[0]
+    palpal = ("नरेंद्र मोदी ने पुणे मेट्रो का उद्घाटन किया #shorts #narendramodi",
+              "#narendramodi #hindinews #shorts #latestnews #newsinhindi #नरेंद्रमोदी\nhttps://x.com/a?b=1&c=2\n"
+              "https://en.wikipedia.org/wiki/Pune_Metro#Line_3")
+    assert watch.metadata_problems(*palpal) == ["link fragment read as hashtag '#Line_3'"]
+    assert watch.metadata_problems("The Planet That Almost Became a King",
+                                   "In 1781...\n\nSources:\n- https://en.wikipedia.org/wiki/Uranus\n\n#space #uranus") == []
+    assert "link fragment" in watch.quality({"name": "C"}, [dict(vid("Cyclone Murasu Hits", 3), description=murasu)], AT)
+
+
 def test_a_story_retold_under_another_title_is_caught():
     ch = {"name": "Orbitwire"}
     saudi = [vid("The October 2026 Houthi Attacks on Saudi Arabian Airports #shorts", 1),

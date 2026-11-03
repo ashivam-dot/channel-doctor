@@ -50,6 +50,7 @@ def feed(gh: GitHub, channel_id: str) -> list[dict]:
     for e in ET.fromstring(raw).findall("a:entry", NS):
         stats = e.find("m:group/m:community/m:statistics", NS)
         out.append({"id": e.findtext("yt:videoId", namespaces=NS), "title": e.findtext("a:title", namespaces=NS),
+                    "description": e.findtext("m:group/m:description", default="", namespaces=NS),
                     "published": e.findtext("a:published", namespaces=NS),
                     "views": int(stats.get("views", 0)) if stats is not None else None})
     return sorted(out, key=lambda v: v["published"] or "", reverse=True)
@@ -101,6 +102,35 @@ def title_problems(title: str, language: str = "en") -> list[str]:
     return out
 
 
+# Hashtags YouTube's own guidance and its forum experts call tag stuffing; channels have been terminated for them.
+SPAM_TAGS = {"viral", "viralshorts", "viralvideo", "fyp", "foryou", "foryoupage", "trending", "trendingshorts",
+             "shortsfeed", "shortsvideo", "ytshorts", "youtubeshorts", "shortsviral", "explore", "explorepage"}
+MAX_HASHTAGS = 15
+
+
+def metadata_problems(title: str, description: str) -> list[str]:
+    """Search-metadata defects in an upload: a URL fragment YouTube reads as a hashtag ("...#publisher=newsstand"
+    showed #publisher on Orbitwire and Pal Pal, 2026-11-03), spam hashtags, over-tagging, and a hashtag that lost the
+    accented letters of a name in the title (#FtimaBez for Fátima Báñez)."""
+    import unicodedata
+
+    text = f"{title or ''}\n{description or ''}"
+    out = [f"link fragment read as hashtag {m.group(1)!r}" for m in re.finditer(r"https?://\S*?(#[^\s=&]+)", text)]
+    tags = re.findall(r"(?<![\w/&#])#([^\W_][\w\u0900-\u097F]*)", re.sub(r"https?://\S+", " ", text))
+    if spam := sorted({t.lower() for t in tags} & SPAM_TAGS):
+        out.append("spam hashtags " + " ".join("#" + t for t in spam))
+    if len(set(t.lower() for t in tags)) > MAX_HASHTAGS:
+        out.append(f"{len(set(t.lower() for t in tags))} hashtags (over {MAX_HASHTAGS} dilutes them)")
+    for word in re.findall(r"[^\W\d_]+", title or ""):
+        folded = unicodedata.normalize("NFKD", word).encode("ascii", "ignore").decode()
+        dropped = "".join(c for c in word if c.isascii())
+        if folded != word and folded != dropped and len(dropped) > 2 and any(
+                dropped.lower() in t.lower() and folded.lower() not in t.lower() for t in tags):
+            out.append(f"hashtag lost the accents of {word!r}")
+            break
+    return out
+
+
 def code_changed(gh: GitHub, repo: str, lane: dict) -> str | None:
     """When the lane's editable code last changed on the default branch, or None (nothing editable, or unknown)."""
     dates = []
@@ -120,6 +150,7 @@ def quality(ch: dict, vids: list[dict], at: datetime, fixed_at: str | None = Non
     recent = [v for v in vids if v.get("published") and hours(v["published"], at) <= QA_HOURS
               and not (fixed_at and hours(v["published"], at) > hours(fixed_at, at))]
     found = [f"\"{v['title']}\": {p}" for v in recent for p in title_problems(v["title"], (ch.get("lab") or {}).get("language", "en"))]
+    found += [f"\"{v['title']}\": {p}" for v in recent for p in metadata_problems(v["title"], v.get("description", ""))]
     seen: dict[str, int] = {}
     for v in recent:
         key = re.sub(r"\W+", " ", (v["title"] or "").lower()).strip()
