@@ -9,12 +9,11 @@
   "channels": {
     "kyun-hua": {
       "name": "Kyun Hua",
-      "paused": "2026-10-27",
       "youtube": "UCS-lEPHkz_dftfUjjeTuxOA",
       "quiet_h": 10,
       "min_24h": 3,
       "goal": {"route": "both"},
-      "about": "Hindi 'kyun hua' explainer Shorts about trending Indian news; timing-first (publish while a story trends); Gemini TTS Sulafat voice; real Commons photos per beat in parallax; AI-voice label.",
+      "about": "Pal Pal News (was Kyun Hua): Hindi news Shorts on what Indian newsrooms lead with; timing-first (publish while a story trends); Gemini TTS Sulafat voice; CC BY YouTube news clips and Commons photos per beat; AI-voice label.",
       "lab": {"language": "hi", "experiments": ["comment", "reply"]},
       "lanes": [
         {
