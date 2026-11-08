@@ -334,7 +334,9 @@ def check(gh: GitHub, cfg: dict, at: datetime,
                     if wf.get("max_h") and not ch.get("paused"):
                         problems[f"disabled:{tag}"] = f"{ch['name']}: {tag} is {state}; its schedule no longer runs"
                     continue
-                scheduled = [r for r in runs if r["event"] == "schedule"]
+                # A keeper starts runs on main by workflow_dispatch where GitHub drops the cron's: both are the schedule.
+                scheduled = [r for r in runs if r["event"] == "schedule"
+                             or (r["event"] == "workflow_dispatch" and r.get("head_branch") == "main")]
                 if wf.get("max_h") and not ch.get("paused") and scheduled and hours(scheduled[0]["created_at"], at) > wf["max_h"]:
                     problems[f"late:{tag}"] = (f"{ch['name']}: {tag} has not run on schedule for "
                                                f"{hours(scheduled[0]['created_at'], at):.0f} h (limit {wf['max_h']} h)")

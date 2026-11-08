@@ -207,6 +207,26 @@ def test_watch_flags_quiet_late_streak_and_alerts():
     assert "A [attention]" in text and "B [ok]" in text
 
 
+def test_a_keeper_run_on_main_counts_as_on_schedule_a_branch_run_does_not():
+    at = datetime(2026, 10, 10, 12, tzinfo=timezone.utc)
+    cfg = {"owner": "o", "channels": {"a": {"name": "A", "youtube": "UCa", "quiet_h": 18, "lanes": [
+        {"repo": "ra", "mode": "fix", "workflows": {"run.yml": {"name": "run", "max_h": 2}}}]}}}
+
+    def run(event, branch, h):
+        t = (at - timedelta(hours=h)).isoformat()
+        return {"status": "completed", "conclusion": "success", "event": event, "head_branch": branch,
+                "created_at": t, "updated_at": t, "html_url": "u"}
+
+    for runs, late in (([run("workflow_dispatch", "main", 0.5), run("schedule", "main", 6)], False),
+                       ([run("workflow_dispatch", "fix/x", 0.5), run("schedule", "main", 6)], True)):
+        gh = FakeGH({"/ra/actions/workflows/run.yml": {"state": "active"},
+                     "/ra/actions/workflows/run.yml/runs": {"workflow_runs": runs},
+                     "/ra/actions/workflows/doctor.yml/runs": {"workflow_runs": []}, "/ra/issues": []},
+                    {"UCa": atom((at - timedelta(hours=1)).isoformat())})
+        problems, _ = watch.check(gh, cfg, at)
+        assert ("late:ra/run.yml" in problems) is late
+
+
 def test_review_counts_only_videos_with_a_day_of_data():
     from doctor.review import scored
     at = datetime(2026, 10, 10, 12, tzinfo=timezone.utc)
