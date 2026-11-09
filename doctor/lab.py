@@ -39,6 +39,8 @@ BREAKOUT_X = 3.0
 BREAKOUT_MIN_VIEWS = 200
 MAX_COMMENTS, MAX_LOCALIZE, MAX_RETITLE = 3, 3, 1
 MAX_REPLIES, REPLY_PAGES = 40, 3  # a reply costs 50 quota units; 40 is 2,000 of the project's 10,000 a day
+MAX_UNPOST, UNPOST_PAGES = 150, 40  # a delete costs 50 quota units; 150 is 7,500 of the 10,000 a day
+UNPOST = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "unpost.json")
 RETITLE_JUDGE_H = 72
 DONE_KEEP_H = 24 * 8
 MAX_RETITLES_KEPT = 30
@@ -100,7 +102,8 @@ class YouTube:
                                      headers={"Authorization": f"Bearer {self._token}",
                                               "Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=60) as r:
-            return json.load(r)
+            raw = r.read()
+            return json.loads(raw) if raw else {}
 
     def uploads(self, n: int = 50) -> list[dict]:
         ch = self.call("GET", "channels", {"part": "contentDetails", "mine": "true"})["items"][0]
@@ -371,6 +374,53 @@ def reply(yt, ask, ch, titles, done, at, about, write) -> list[str]:
     return log
 
 
+def norm(text: str | None) -> str:
+    return " ".join((text or "").split())
+
+
+def unpost(yt, texts: list[str], dry: bool = False) -> list[str]:
+    """Deletes the lab's past first comments and replies (owner, 2026-11-09: no automated comments, after YouTube
+    terminated Chaukanna). Only the channel's own comments whose text is exactly one the lab logged posting, so
+    nothing the owner wrote by hand is touched."""
+    want = {norm(t) for t in texts if norm(t)}
+    if not want:
+        return []
+    if not yt.channel_id:
+        yt.uploads(1)
+    try:
+        threads = yt.threads(UNPOST_PAGES)
+    except Exception as e:
+        return [f"unpost: comments could not be read ({getattr(e, 'code', '') or type(e).__name__})"]
+    mine = []
+    for t in threads:
+        top = t["snippet"]["topLevelComment"]
+        replies = (t.get("replies") or {}).get("comments", [])
+        if t["snippet"].get("totalReplyCount", 0) > len(replies):
+            replies = yt.replies(top["id"])
+        for c in [top, *replies]:
+            sn = c["snippet"]
+            if (sn.get("authorChannelId", {}).get("value") == yt.channel_id
+                    and norm(sn.get("textOriginal") or sn.get("textDisplay")) in want):
+                mine.append(c["id"])
+    gone, failed = 0, []
+    for cid in mine[:MAX_UNPOST]:
+        if dry:
+            gone += 1
+            continue
+        try:
+            yt.call("DELETE", "comments", {"id": cid}, None, 50)
+            gone += 1
+        except Exception as e:
+            failed.append(str(getattr(e, "code", "") or type(e).__name__))
+    log = [f"unpost: deleted {gone} of the lab's {len(mine)} past comments and replies still up"
+           + (" (dry run)" if dry else "")]
+    if failed:
+        log.append(f"unpost: {len(failed)} deletes refused ({', '.join(sorted(set(failed)))})")
+    if len(mine) > MAX_UNPOST:
+        log.append(f"unpost: {len(mine) - MAX_UNPOST} left for the next run (quota)")
+    return log
+
+
 def prune(state: dict, at: datetime):
     """Keep the state issue small: past the experiments' windows a video is never picked again anyway."""
     for kind, items in state.get("done", {}).items():
@@ -434,8 +484,15 @@ def run_repo(repo: str, cfg: dict, dry: bool = False) -> list[str]:
     from .github import GitHub
     from .state import IssueState, iso
 
-    _, ch, _ = config.lane_for(cfg, repo)
+    key, ch, _ = config.lane_for(cfg, repo)
     raw = os.environ.get("YOUTUBE_OAUTH_JSON")
+    texts = json.load(open(UNPOST, encoding="utf-8")).get(key, []) if os.path.exists(UNPOST) else []
+    if texts and raw and not ch.get("hands_off"):
+        yt = YouTube(raw)
+        log = unpost(yt, texts, dry)
+        print("unpost:\n  " + "\n  ".join(log))
+        if not dry:
+            telegram.send(f"LAB {ch['name']}\n" + "\n".join(f"- {l}" for l in log))
     if not (ch.get("lab") or {}).get("experiments") or ch.get("hands_off") or not raw:
         print("no lab experiments for this channel")
         return []

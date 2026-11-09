@@ -138,6 +138,34 @@ def test_each_positive_comment_gets_one_warm_reply_and_nothing_else_is_answered(
     assert len([c for c in yt.calls if c[1] == "comments"]) == 2
 
 
+class UnpostYT(ThreadYT):
+    def threads(self, pages=3):
+        return self.all
+
+
+def test_unpost_deletes_only_the_channels_own_comments_the_lab_logged_posting():
+    lab_first = comment("c1", "आप होते तो  क्या करते?", author="UCme")
+    by_hand = comment("c2", "Pinned by the owner", author="UCme")
+    viewer = comment("c3", "आप होते तो क्या करते?")
+    lab_reply = comment("r1", "Thanks for watching!", author="UCme")
+    yt = UnpostYT([thread(lab_first), thread(by_hand), thread(viewer, [lab_reply])])
+    log = lab.unpost(yt, ["आप होते तो क्या करते?", "Thanks for watching!"])
+    deletes = [c[2]["id"] for c in yt.calls if c[0] == "DELETE"]
+    assert deletes == ["c1", "r1"] and "deleted 2 of the lab's 2" in log[0]
+    dry = UnpostYT([thread(lab_first)])
+    assert "dry run" in lab.unpost(dry, ["आप होते तो क्या करते?"], dry=True)[0]
+    assert not [c for c in dry.calls if c[0] == "DELETE"] and lab.unpost(dry, []) == []
+
+
+def test_every_channel_with_past_lab_comments_has_its_texts_to_unpost():
+    import json
+    from doctor import config
+    texts = json.load(open(lab.UNPOST, encoding="utf-8"))
+    assert set(texts) <= set(config.load()["channels"]) and all(texts.values())
+    assert not any((config.load()["channels"][k].get("lab") or {}).get("experiments", []) and
+                   {"comment", "reply"} & set(config.load()["channels"][k]["lab"]["experiments"]) for k in texts)
+
+
 def test_a_reply_with_a_link_or_a_subscribe_request_is_never_posted():
     yt = ThreadYT([thread(comment("c1", "love it"))])
     b = FakeBrain({"POSITIVE": {"replies": [{"n": 1, "positive": True, "reply": "Thanks! Subscribe for more"}]}})
