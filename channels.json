@@ -13,8 +13,8 @@
       "quiet_h": 10,
       "min_24h": 3,
       "goal": {"route": "both"},
-      "about": "Pal Pal News (was Kyun Hua): Hindi news Shorts on what Indian newsrooms lead with; timing-first (publish while a story trends); Gemini TTS Sulafat voice; CC BY YouTube news clips and Commons photos per beat; AI-voice label.",
-      "lab": {"language": "hi", "experiments": ["comment", "reply"]},
+      "about": "Pal Pal News (was Kyun Hua): Hindi news Shorts on what Indian newsrooms lead with; timing-first (publish while a story trends); Gemini TTS Sulafat voice; free Commons and government photos per beat (other channels' clips off since 2026-11-09); AI-voice label.",
+      "lab": {"language": "hi", "experiments": []},
       "lanes": [
         {
           "repo": "hindi-news-desk",
@@ -42,7 +42,7 @@
       "watch_from": "2026-10-23T15:00:00+00:00",
       "goal": {"route": "both"},
       "about": "Deep-time channel: three choice-ladder Shorts daily at 00:30, 14:30 and 19:30 UTC; separate calm two-hour sleep documentaries Tuesday and Friday at 21:00 UTC. Batch releases require complete audiovisual review and owner-visible readback.",
-      "lab": {"language": "en", "experiments": ["comment", "localize", "retitle", "reply"], "languages": ["es", "pt", "de", "fr", "hi"]},
+      "lab": {"language": "en", "experiments": ["localize", "retitle"], "languages": ["es", "pt", "de", "fr", "hi"]},
       "lanes": [
         {
           "repo": "pangaea-nights", "batch_state": "batch-production.json",
@@ -73,7 +73,7 @@
       "watch_from": "2026-10-15T00:00:00+00:00",
       "goal": {"route": "shorts"},
       "about": "Sannatpur Ki Raatein: original Hindi Shorts about a fictional village in 1996, for a general audience aged 13+. Fixed cast and props, Gemini Charon narrator or its tested clone, daily release slots 13:00 and 19:00 IST. Reviewed batch reservations preserve those slots.",
-      "lab": {"language": "hi", "experiments": ["comment", "retitle", "reply"]},
+      "lab": {"language": "hi", "experiments": ["retitle"]},
       "lanes": [
         {
           "repo": "kahaani-chaos", "batch_state": "batch-production.json",
@@ -99,7 +99,7 @@
       "min_24h": 2,
       "goal": {"route": "both"},
       "about": "English Shorts on the world's most famous trending stories as photo stories with depth parallax and emotional narration; strict decorum, verified facts.",
-      "lab": {"language": "en", "experiments": ["comment", "localize", "reply"], "languages": ["hi", "es", "pt"]},
+      "lab": {"language": "en", "experiments": ["localize"], "languages": ["hi", "es", "pt"]},
       "lanes": [
         {
           "repo": "rebuilt-in-3d",
