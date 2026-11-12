@@ -1,133 +1,96 @@
 {
- "at": "2026-11-09T11:58:34+00:00",
+ "at": "2026-11-12T11:41:38+00:00",
  "channels": {
   "kyun-hua": {
    "name": "Kyun Hua",
-   "summary": "15 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 53 views, best 213, worst 2",
-   "road": "79 subscribers (2.2 subscribers per 1,000 views); route both; 84 days to the deadline; 4.0 subscribers/day; expanded sub line ~105 days away; full sub line ~230 days away; exact: Shorts views 90d 18023, long-form hours 365d 0.0, net subscribers 28d 68; go/no-go: 4,000 h by 15 Dec: have 0.0, need 108.1 h/day, pace 0.0 h/day: NO-GO (pace 0.0% of the need); 8,000 h by 1 Feb (doubled bar): have 0.0, need 94.1 h/day, pace 0.0 h/day: NO-GO (pace 0.0% of the need); 10M qualified views/90d by 15 Dec: have 18,023, need 269,983/day, pace 200/day: NO-GO (pace 0.1% of the need); 20M qualified views/90d by 1 Feb (doubled bar): have 18,023, need 235,282/day, pace 200/day: NO-GO (pace 0.1% of the need)",
-   "health": "The channel is severely off-pace for YPP thresholds with 79 subscribers and 18,023 90-day Shorts views against an 84-day deadline, requiring an immediate pivot to its highest-converting content.",
+   "summary": "15 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 38 views, best 998, worst 0",
+   "road": "80 subscribers (2.2 subscribers per 1,000 views); route both; 81 days to the deadline; 4.1 subscribers/day; expanded sub line ~103 days away; full sub line ~226 days away; exact: Shorts views 90d 18672, long-form hours 365d 0.0, net subscribers 28d 67; go/no-go: 4,000 h by 15 Dec: have 0.0, need 117.6 h/day, pace 0.0 h/day: NO-GO (pace 0.0% of the need); 8,000 h by 1 Feb (doubled bar): have 0.0, need 97.6 h/day, pace 0.0 h/day: NO-GO (pace 0.0% of the need); 10M qualified views/90d by 15 Dec: have 18,672, need 293,776/day, pace 207/day: NO-GO (pace 0.1% of the need); 20M qualified views/90d by 1 Feb (doubled bar): have 18,672, need 243,882/day, pace 207/day: NO-GO (pace 0.1% of the need)",
+   "health": "The channel is publishing consistently with strong initial traction on domestic politics and entertainment news, but is far off pace for both watch hours and Shorts views needed before the January 2027 YPP threshold changes.",
    "working": [
-    "Indian political explainers (lane:rajneeti x1.7 lift, typical 162 views, 74.6% retention; category:politics x1.35 lift, typical 379 views, 93.8% retention).",
-    "Defence news category (x1.35 lift, typical 86 views, 95.5% retention)."
+    "Political content ('lane:rajneeti' and 'category:politics') significantly outperforms channel baseline with up to x1.577 ranking lift and 74.6%–93.7% retention across 14 scored Shorts.",
+    "Defence news ('category:defence') demonstrates strong viewer retention (108.6%) and a x1.35 lift across 6 Shorts.",
+    "Recent high-performing Shorts on trending topics reached up to 998 views within 25 hours."
    ],
    "not_working": [
-    "Weather news (category:weather x0.75 lift, typical 8 views; latest Delhi AQI Shorts getting 2–5 views).",
-    "World regional topics (region:world x0.784 lift, 30 median views across 39 Shorts).",
-    "Pace toward YPP view bar (currently generating ~200 views/day vs required 235k-270k views/day)."
+    "Weather, protest, and economy topics heavily underperform, averaging 6 to 23 views per video (lifts 0.75–0.773 across 5+ videos each).",
+    "Subscriber conversion rate is low at 2.2 subs per 1,000 views, leaving the channel 103 days away from the expanded YPP 500-sub milestone at current pace.",
+    "Long-form watch time is 0.0 hours as the channel currently relies entirely on Shorts."
    ],
-   "ypp_lever": "Focus automation topic selection strictly on Indian politics and defence to maximize initial retention (74-95%) and view velocity, which directly drives subscriber conversion toward the 500-sub finish line.",
+   "ypp_lever": "Increase topic weight for domestic politics ('rajneeti') and defence while adding a standardized spoken subscribe prompt to every Short script to boost subscriber conversion from 2.2 to 4.0+ per 1,000 views.",
    "inauthentic_risk": {
     "level": "medium",
-    "why": "High volume of templated daily news read by TTS voice risks automated reuse/repetitive content flags during human review unless each video maintains distinct original script research and clear visual variety."
+    "why": "Automated news channels using AI TTS (Gemini Sulafat) and stock/Creative Commons images risk rejection for 'reused' or 'inauthentic' content if videos lack original commentary or distinct visual editing. Fix: Ensure scripts contain an explicit original analysis perspective and verify the synthetic voice disclosure label is active on every upload."
    },
    "recommendations": [
     {
-     "change": "Increase automation topic weights for Indian politics and defence while penalizing weather, protest, and world news beats in desk/news.py.",
-     "evidence": "category:politics averages 379 views (93.8% retention) and lane:rajneeti achieves 1.7x lift, whereas category:weather averages 8 views (0.75x lift).",
+     "change": "Adjust automated topic weights in topic selector code to favor 'lane:rajneeti', 'category:politics', and 'category:defence' over weather, protest, and economy topics.",
+     "evidence": "Data shows rajneeti has a 1.577 lift (14 Shorts, 111 typical views) and politics has 379 typical views, whereas weather/protest/economy yield 6–23 median views across 5+ videos each.",
      "target": "code",
      "risk": "low",
      "auto_ok": true
     },
     {
-     "change": "Inject an explicit subscriber call-to-action prompt into the caption generator and closing frame code for political Shorts.",
-     "evidence": "Channel has 79 subscribers (2.2 subs/1k views) and needs 500 for expanded YPP; subscriber conversion is the primary bottleneck.",
+     "change": "Append a standardized Hindi spoken call-to-action prompt and subscriber overlay frame in the caption generator script.",
+     "evidence": "Subscriber conversion rate is currently 2.2 per 1,000 views (80 total subs), making subscriber count the main bottleneck for reaching the 500-sub Expanded YPP tier.",
      "target": "code",
      "risk": "low",
      "auto_ok": true
     },
     {
-     "change": "Restrict topic pipeline region filter to domestic Indian stories, excluding world news categories.",
-     "evidence": "region:world yields a 0.784 lift baseline (30 median views across 39 Shorts) versus region:india domestic coverage.",
-     "target": "code",
-     "risk": "low",
-     "auto_ok": true
+     "change": "Create related long-form news roundups or link high-performing Shorts directly to longer explanatory videos on domestic policy.",
+     "evidence": "Long-form watch time is currently 0.0 hours; relying solely on 10M Shorts views requires 293k views/day versus the current 207 views/day pace.",
+     "target": "format",
+     "risk": "medium",
+     "auto_ok": false
+    },
+    {
+     "change": "Strictly enforce channel scope filters in desk/news.py to avoid publishing celebrity/entertainment gossip content.",
+     "evidence": "Recent uploads include Bollywood movie box office updates (Ramayana, Salman Khan) despite channel rules stating celebrity gossip and entertainment are out of scope.",
+     "target": "topics",
+     "risk": "medium",
+     "auto_ok": false
     }
    ],
    "title_lint": []
   },
   "pangaea": {
    "name": "Pangaea Nights",
-   "summary": "15 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 72 views, best 1095, worst 11",
-   "road": "36 subscribers (4.1 subscribers per 1,000 views); route both; 84 days to the deadline; 0.8 subscribers/day; expanded sub line ~591 days away; full sub line ~1227 days away; Shorts-views and watch-hour totals unavailable (public numbers only); go/no-go: watch hours and qualified views unknown (no fresh Analytics numbers for this channel)",
-   "health": "Pangaea Nights is generating solid reach on select prehistoric Shorts, but sub conversion and missing long-form sleep documentaries stall progress toward YPP watch hours.",
-   "working": [
-    "Shorts featuring extreme animal records and superlatives drive high reach (Titanoboa: 1,095 views; Blue Whale: 1,033 views; Livyatan: 520 views).",
-    "Consistent automated daily Shorts publishing feed is maintained."
-   ],
-   "not_working": [
-    "Public video tags leak internal pipeline strings (e.g., 'pangaea-nights:2026-10-23-last-day-dinosaurs') across 14 of 14 recent uploads.",
-    "No long-form sleep documentaries appear in recent uploads, missing out on watch-hour accumulation needed for full YPP."
-   ],
-   "ypp_lever": "Resume long-form sleep documentary releases and link Shorts to them, driving accumulated watch hours toward the 3,000/4,000-hour finish line before the January 2027 deadline.",
-   "inauthentic_risk": {
-    "level": "medium",
-    "why": "Exposing internal pipeline tracking tags in public tags signals automated spam to YPP human reviewers. Fix by sanitizing tag arrays before calling YouTube Data API."
-   },
-   "recommendations": [
-    {
-     "change": "Filter out internal pipeline tags before sending public tag data to YouTube API.",
-     "evidence": "14 of 14 recent public uploads contain raw metadata tags like 'pangaea-nights:2026-10-23-last-day-dinosaurs'.",
-     "target": "code",
-     "risk": "low",
-     "auto_ok": true
-    },
-    {
-     "change": "Resume bi-weekly publication of 2-hour calm sleep documentaries.",
-     "evidence": "0 long-form videos published in the recent feed, making 3,000 watch-hour progress impossible via Shorts alone.",
-     "target": "ops",
-     "risk": "low",
-     "auto_ok": false
-    },
-    {
-     "change": "Configure auto-linker to set related long-form videos and pinned subscribe prompts on all Shorts.",
-     "evidence": "Sub conversion rate is 4.1 per 1,000 views, leaving expanded YPP estimated ~591 days away at 0.8 subs/day.",
-     "target": "code",
-     "risk": "low",
-     "auto_ok": true
-    },
-    {
-     "change": "Prioritize prehistoric topics centered on extreme size and record-holders over standard species dimensions.",
-     "evidence": "Titles featuring extreme records/superlatives reached 520-1,095 views (Titanoboa, Blue Whale, Livyatan) compared to standard stat titles at 7-29 views (Dimetrodon, Quetzalcoatlus, Smilodon).",
-     "target": "topics",
-     "risk": "low",
-     "auto_ok": false
-    }
-   ],
+   "summary": "15 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 47 views, best 373, worst 9",
+   "road": "41 subscribers (4.4 subscribers per 1,000 views); route both; 81 days to the deadline; 0.9 subscribers/day; expanded sub line ~536 days away; full sub line ~1119 days away; Shorts-views and watch-hour totals unavailable (public numbers only); go/no-go: watch hours and qualified views unknown (no fresh Analytics numbers for this channel)",
    "title_lint": [
     "14 of the latest 14 public uploads carry pipeline tags in their public tags (e.g. Y_zpVf53Hwc: pangaea-nights:2026-10-23-last-day-dinosaurs)"
    ]
   },
   "kahaani-chaos": {
    "name": "Kahaani Chaos",
-   "summary": "3 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 9 views, best 24, worst 1",
-   "road": "16 subscribers (65.8 subscribers per 1,000 views); route shorts; 84 days to the deadline; 0.0 subscribers/day; expanded sub line unknown pace; full sub line unknown pace; Shorts-views and watch-hour totals unavailable (public numbers only)",
-   "health": "The publishing pipeline has stalled with zero automation runs in the last 7 days, halting video output despite a strong subscriber conversion rate of 65.8 per 1,000 views.",
+   "summary": "0 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 9 views, best 24, worst 1",
+   "road": "16 subscribers (65.8 subscribers per 1,000 views); route shorts; 81 days to the deadline; 0.0 subscribers/day; expanded sub line unknown pace; full sub line unknown pace; Shorts-views and watch-hour totals unavailable (public numbers only)",
+   "health": "Publishing has completely stalled with zero uploads and zero automation runs in the last 7 days, halting all progress toward YPP.",
    "working": [
-    "High subscriber conversion rate of 65.8 subs per 1,000 views proves core audience interest in the 1996 mystery premise.",
-    "Title formatting with the explicit branding suffix '| सन्नाटपुर' correlated with top-performing recent videos (e.g. 24 views vs 1 view for non-suffixed titles).",
-    "Clean policy compliance with zero title/tag lint flags and strict adherence to non-shock, original Hindi storytelling."
+    "Subscriber conversion rate is strong at 65.8 subscribers per 1,000 views on existing views.",
+    "Title formatting and editorial compliance pass all deterministic lint checks with rich 1996 period detail."
    ],
    "not_working": [
-    "Automation reliability has dropped to zero runs in the last 7 days, missing scheduled 13:00 and 19:00 IST release slots.",
-    "Shorts view distribution remains extremely low, with a median of 9 views for videos older than 24 hours.",
-    "Inconsistent title branding across recent uploads creates fragmented series recognition in the feed."
+    "Zero uploads published in the last 7 days, missing the target schedule of daily 13:00 and 19:00 IST releases.",
+    "Automation execution pipeline ran 0 times over the last 7 days.",
+    "Median view count sits at only 9 views per Short, limiting data for pattern verification."
    ],
-   "ypp_lever": "Restore automated daily uploads at the 13:00 and 19:00 IST slots to feed the Shorts algorithm consistently and monetize existing subscriber conversion strength.",
+   "ypp_lever": "Restore automated publishing reliability immediately; consistent content cadence is required to monetize the channel's strong 65.8 subs/1K view conversion rate before the deadline.",
    "inauthentic_risk": {
     "level": "low",
-    "why": "Videos follow an original narrative world with researched 1996 period details and specific original character frames. Ensure AI narration retains varied cadence and avoids generic stock imagery loops."
+    "why": "Content features original scripted Hindi fiction with distinct characters and world rules, though visual variety must be maintained across automated runs to prevent repetitive content flags."
    },
    "recommendations": [
     {
-     "change": "Investigate and restart the automated batch publish workflow to resume scheduled daily releases.",
-     "evidence": "0 automation runs in the last 7 days; latest video published 142 hours ago.",
+     "change": "Investigate execution logs and restart the automated batch publish workflow to restore daily release slots.",
+     "evidence": "0 workflow runs and 0 published videos in the last 7 days; latest video was published 214 hours ago.",
      "target": "ops",
      "risk": "medium",
      "auto_ok": false
     },
     {
-     "change": "Standardize all generated titles to append the series brand '| सन्नाटपुर' in title template generation.",
-     "evidence": "Titles ending in '| सन्नाटपुर' achieved a median of 17 views (max 24) compared to a median of 6 views for titles without the suffix.",
+     "change": "Enforce the '| सन्नाटपुर' series suffix template across all auto-generated titles in title generation code.",
+     "evidence": "Titles featuring '| सन्नाटपुर' yielded higher peak views (up to 24 views) compared to unsuffixed titles (down to 1 view), though this remains a hypothesis until 4+ scored videos are logged on both sides.",
      "target": "code",
      "risk": "low",
      "auto_ok": true
@@ -137,145 +100,53 @@
   },
   "orbitwire": {
    "name": "Orbitwire",
-   "summary": "11 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 446 views, best 2699, worst 34",
-   "road": "55 subscribers (1.5 subscribers per 1,000 views); route both; 84 days to the deadline; 1.5 subscribers/day; expanded sub line ~297 days away; full sub line ~630 days away; exact: Shorts views 90d 20102, long-form hours 365d 0.1, net subscribers 28d 48; go/no-go: 4,000 h by 15 Dec: have 0.1, need 108.1 h/day, pace 0.0 h/day: NO-GO (pace 0.0% of the need); 8,000 h by 1 Feb (doubled bar): have 0.1, need 94.1 h/day, pace 0.0 h/day: NO-GO (pace 0.0% of the need); 10M qualified views/90d by 15 Dec: have 20,102, need 269,950/day, pace 223/day: NO-GO (pace 0.1% of the need); 20M qualified views/90d by 1 Feb (doubled bar): have 20,102, need 235,281/day, pace 223/day: NO-GO (pace 0.1% of the need)",
-   "health": "Orbitwire generates consistent daily Shorts views but is severely behind pace for both subscriber and view YPP thresholds.",
-   "working": [
-    "Cyclone coverage shows strong performance (4 Shorts, median 508 views, 111.9% retention, 1.35x lift)",
-    "Obituary news consistently achieves baseline views (30 Shorts, median 333 views, 1.215x lift)",
-    "Automation reliability is strong with zero test/health failures and low run failures (7 of 337)"
-   ],
-   "not_working": [
-    "Protest content underperforms baseline (9 Shorts, median 97 views, 0.777x lift)",
-    "Earthquake content significantly underperforms baseline (8 Shorts, median 54 views, 0.75x lift)",
-    "Subscriber conversion rate (1.5 per 1,000 views) is far too slow to reach 500 subscribers within 84 days"
-   ],
-   "ypp_lever": "Add an engaging, standardized call-to-subscribe prompt in automated Shorts audio/captions and shift topic selection code toward high-performing categories (cyclone and high-profile obituaries), because subscriber conversion rate (1.5 per 1,000 views) is the single binding constraint keeping the channel from reaching Expanded YPP.",
-   "inauthentic_risk": {
-    "level": "medium",
-    "why": "High volume of automated obituary Shorts using templated visual structures risks human reviewer rejection for repetitive or low-originality news aggregation; fix by adding unique narrative context and varied motion graphics per story."
-   },
-   "recommendations": [
-    {
-     "change": "Adjust topic selection weights in news code to favor cyclone and major obituary stories while reducing protest and quake topic weights",
-     "evidence": "Cyclone (4 Shorts, 508 views, 1.35x lift) and death (30 Shorts, 333 views, 1.215x lift) outperform protest (9 Shorts, 97 views, 0.777x lift) and quake (8 Shorts, 54 views, 0.75x lift) against the 200-view baseline.",
-     "target": "code",
-     "risk": "low",
-     "auto_ok": true
-    },
-    {
-     "change": "Append a standardized spoken and captioned subscription call-to-action to the end of generated Shorts scripts",
-     "evidence": "Channel has only 55 subscribers and needs 445 more in 84 days, but current conversion is only 1.5 subscribers per 1,000 views.",
-     "target": "code",
-     "risk": "low",
-     "auto_ok": true
-    },
-    {
-     "change": "Update title capitalization lint code to handle unicode accented characters like 'Fátima' correctly",
-     "evidence": "Title lint flagged 'Fátima Báñez, First Woman Minister of Employment, Dies at 59' for having lowercase substring 'tima'.",
-     "target": "code",
-     "risk": "low",
-     "auto_ok": true
-    },
-    {
-     "change": "Enhance script prompts to require original context and editorial insight for obituary and event stories",
-     "evidence": "YouTube YPP reviewers reject automated news channels for generic or template content unless unique research and narrative framing are clear.",
-     "target": "format",
-     "risk": "medium",
-     "auto_ok": false
-    }
-   ],
-   "title_lint": [
-    "0f1fKIPL-_M \"Fátima Báñez, First Woman Minister of Employment, Dies at 59\": one word in lower case among title-case words ('tima')"
-   ]
+   "summary": "9 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 405 views, best 2736, worst 41",
+   "road": "57 subscribers (1.5 subscribers per 1,000 views); route both; 81 days to the deadline; 1.0 subscribers/day; expanded sub line ~443 days away; full sub line ~943 days away; exact: Shorts views 90d 22083, long-form hours 365d 0.0, net subscribers 28d 44; go/no-go: 4,000 h by 15 Dec: have 0.0, need 117.6 h/day, pace 0.0 h/day: NO-GO (pace 0.0% of the need); 8,000 h by 1 Feb (doubled bar): have 0.0, need 97.6 h/day, pace 0.0 h/day: NO-GO (pace 0.0% of the need); 10M qualified views/90d by 15 Dec: have 22,083, need 293,714/day, pace 245/day: NO-GO (pace 0.1% of the need); 20M qualified views/90d by 1 Feb (doubled bar): have 22,083, need 243,879/day, pace 245/day: NO-GO (pace 0.1% of the need)",
+   "title_lint": []
   },
   "atlas": {
    "name": "Atlas in Numbers",
-   "summary": "15 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 259 views, best 1126, worst 69",
-   "road": "31 subscribers (1.2 subscribers per 1,000 views); route both; 84 days to the deadline; 0.5 subscribers/day; expanded sub line ~938 days away; full sub line ~1938 days away; Shorts-views and watch-hour totals unavailable (public numbers only); go/no-go: watch hours and qualified views unknown (no fresh Analytics numbers for this channel)",
-   "health": "Atlas in Numbers publishes consistently with strong pipeline reliability, but subscriber conversion (1.2 per 1,000 views) is far too slow to reach YPP before the January 2027 deadline.",
-   "working": [
-    "High-impact social and demographic topics generate 700–1,100+ views (e.g., 'The Places With the Highest Adolescent Birth Rates' at 1,126 views; 'Which Country Has the MOST Rural Handwashing Access?' at 1,049 views).",
-    "Title patterns starting with 'Places Ranked by...' or contrasting major countries consistently outperform niche obscure questions.",
-    "Automation reliability is 100% clean with zero publisher or scout failures over the last 7 days."
-   ],
-   "not_working": [
-    "Obscure macroeconomic topics attract low view counts (e.g., 'Bank Loan Spreads' at 68 views, 'Spending More Than It Produces' at 69 views, 'Energy Depletion' at 108 views).",
-    "Subscriber conversion is critically low at 1.2 subs/1k views, projecting over 900 days to reach expanded YPP at current rates."
-   ],
-   "ypp_lever": "Increase subscriber conversion by introducing an end-screen visual and spoken subscribe call-to-action tailored to the globe dataset concept, alongside reweighting topics toward high-performing demographic themes.",
-   "inauthentic_risk": {
-    "level": "medium",
-    "why": "A automated 'photoreal globe visual + raw data text' format risks being flagged by YPP reviewers as repetitive template content if videos lack original narrative analysis or human voiceover commentary explaining the data."
-   },
-   "recommendations": [
-    {
-     "change": "Adjust topic generation code to weight demographic and social welfare datasets higher while penalizing technical financial metrics.",
-     "evidence": "Demographic/social topics average 900+ views across 5 videos, whereas technical financial topics average <150 views across 5 videos.",
-     "target": "code",
-     "risk": "low",
-     "auto_ok": true
-    },
-    {
-     "change": "Add an automated end-frame subscribe prompt and spoken call-to-action to video generation scripts.",
-     "evidence": "Channel currently converts only 1.2 subscribers per 1,000 views across 31 total subscribers, making subscriber count the primary bottleneck to YPP.",
-     "target": "code",
-     "risk": "low",
-     "auto_ok": true
-    },
-    {
-     "change": "Standardize title templates to use 'Places Ranked by...' or '[Country A] vs [Country B]' formats in place of obscure question hooks.",
-     "evidence": "Titles using ranking/versus phrasing average over 800 views ('Places Ranked by Income Share': 1,011 views), whereas niche question titles average <150 views ('Is EAST Timor Near the Top for Energy Depletion?': 108 views).",
-     "target": "code",
-     "risk": "low",
-     "auto_ok": true
-    },
-    {
-     "change": "Incorporate audio commentary explaining the root cause behind surprising dataset contrasts to ensure compliance with YPP original value policy.",
-     "evidence": "YouTube policy explicitly rejects generic data templates; adding scripted insights protects the channel during YPP human review.",
-     "target": "format",
-     "risk": "medium",
-     "auto_ok": false
-    }
-   ],
+   "summary": "15 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 112 views, best 979, worst 17",
+   "road": "32 subscribers (1.5 subscribers per 1,000 views); route both; 81 days to the deadline; 0.6 subscribers/day; expanded sub line ~819 days away; full sub line ~1694 days away; Shorts-views and watch-hour totals unavailable (public numbers only); go/no-go: watch hours and qualified views unknown (no fresh Analytics numbers for this channel)",
    "title_lint": []
   },
   "mool-katha": {
    "name": "Mool Katha",
-   "summary": "8 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 39 views, best 271, worst 5",
-   "road": "10 subscribers (5.6 subscribers per 1,000 views); route shorts; 84 days to the deadline; 0.4 subscribers/day; expanded sub line ~1143 days away; full sub line ~2310 days away; Shorts-views and watch-hour totals unavailable (public numbers only)",
-   "health": "Mool Katha is publishing consistently and seeing recent spikes up to 423 views, but current sub velocity (0.4/day) is far too slow to reach expanded YPP before the deadline.",
+   "summary": "8 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 54 views, best 462, worst 5",
+   "road": "10 subscribers (4.3 subscribers per 1,000 views); route shorts; 81 days to the deadline; 0.4 subscribers/day; expanded sub line ~1143 days away; full sub line ~2310 days away; Shorts-views and watch-hour totals unavailable (public numbers only)",
+   "health": "Mool Katha is publishing consistently in the Ramayana Shorts niche, but at 10 subscribers and 0.4 subs/day, its subscriber growth is far too slow to reach Expanded YPP before the 31 January 2027 deadline.",
    "working": [
-    "Subscriber conversion rate is decent at 5.6 subs per 1,000 views",
-    "Recent curiosity-driven titles focusing on specific Ramayana plot points reached up to 423 and 271 views within 44 hours"
+    "High-curiosity question titles on core Ramayana events attract peak reach (e.g., 462 views for Rama leaving sleeping subjects, 276 views for Trijata's dream, 237 views for Vali's fear).",
+    "Consistent daily publish rate with 8 uploads in the last 7 days."
    ],
    "not_working": [
-    "Control analytics and watchdog automation is failing frequently (18 of 22 runs failed in the last 7 days)",
-    "Median view count across older videos remains low at 39 views, delaying reach needed for subscriber conversion"
+    "Subscriber conversion rate (4.3 per 1,000 views) is insufficient to reach the 500 sub milestone in 81 days at current view velocity.",
+    "Pipeline reliability is unstable, with 4 of 28 Lite lane runs and 9 of 22 watchdog runs failing over the last 7 days.",
+    "Obscure character details and niche battle mechanics perform poorly (e.g., Kabandha at 43 views, Nagpash at 40 views, secret mantra at 21 views)."
    ],
-   "ypp_lever": "Implement a standard end-screen subscribe prompt and visual CTA in the video generator code to capitalize on the 5.6 subs/1k view rate on recent view spikes.",
+   "ypp_lever": "Maximize subscriber conversion per Short by standardizing high-curiosity emotional question titles and adding automated on-screen/pinned subscribe prompts focused on Ramayana mysteries.",
    "inauthentic_risk": {
     "level": "medium",
-    "why": "Templated Hindi mythology Shorts risk being flagged by YouTube reviewers as repetitive AI content if visual assets and voiceovers lack distinct narrative style and visual variety. Ensure script generator includes original commentary and varied scene visuals."
+    "why": "Faceless scripture Shorts risk being flagged as generic/repetitive template content if visuals are static or voiceovers sound unedited. Fix: Ensure unique contextual commentary and visual variety in every narrative."
    },
    "recommendations": [
     {
-     "change": "Add an automated end-frame subscribe prompt and spoken Call-to-Action to the automated Shorts rendering pipeline.",
-     "evidence": "Channel sub conversion is 5.6 per 1,000 views; boosting conversion on recent higher-performing Shorts (423 and 271 views) directly accelerates reaching 500 subscribers.",
-     "target": "code",
-     "risk": "low",
-     "auto_ok": false
-    },
-    {
-     "change": "Weight topic generation toward intense story-curiosity questions like character motives and dramatic turns rather than passive lore.",
-     "evidence": "Titles framed around specific dramatic actions (423 views at 24h, 271 views at 44h) significantly outperformed general descriptive titles (median 39 views, lows of 5-12 views).",
+     "change": "Focus content topics on dramatic moral dilemmas and popular mysteries of major characters (Rama, Vali, Trijata) over minor demon encounters.",
+     "evidence": "Titles on major character decisions/dreams averaged 237–462 views, while obscure character topics (Kabandha, Nagpash, Sampati) averaged 21–81 views.",
      "target": "topics",
      "risk": "low",
      "auto_ok": false
     },
     {
-     "change": "Fix the control analytics and watchdog automation scripts to resolve 18 of 22 failed runs.",
-     "evidence": "18 out of 22 control watchdog runs failed in the past 7 days, risking silent publishing delays and unmonitored performance drops.",
+     "change": "Append a standardized high-converting Hindi subscriber prompt to Short captions and pinned comments.",
+     "evidence": "Current sub count is 10 (0.4/day); channel needs ~6 subscribers/day to hit 500 before the deadline.",
+     "target": "code",
+     "risk": "low",
+     "auto_ok": false
+    },
+    {
+     "change": "Fix automation reliability errors in the Lite lane publisher and watchdog scripts.",
+     "evidence": "4 of 28 Lite lane runs and 9 of 22 control analytics/watchdog runs failed in the last 7 days.",
      "target": "ops",
      "risk": "medium",
      "auto_ok": false
@@ -286,39 +157,48 @@
   "scam-autopsy": {
    "name": "Scam Autopsy",
    "summary": "0 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 19 views, best 30, worst 2",
-   "road": "4 subscribers (57.1 subscribers per 1,000 views); route longform; 84 days to the deadline; 0.0 subscribers/day; expanded sub line unknown pace; full sub line unknown pace; Shorts-views and watch-hour totals unavailable (public numbers only); go/no-go: watch hours and qualified views unknown (no fresh Analytics numbers for this channel)",
-   "health": "The channel is dormant with zero uploads or automation runs in the past seven days, putting it far behind schedule with only 4 subscribers and 84 days remaining until the YPP deadline.",
+   "road": "4 subscribers (57.1 subscribers per 1,000 views); route longform; 81 days to the deadline; 0.0 subscribers/day; expanded sub line unknown pace; full sub line unknown pace; Shorts-views and watch-hour totals unavailable (public numbers only); go/no-go: watch hours and qualified views unknown (no fresh Analytics numbers for this channel)",
+   "health": "The channel is currently inactive with no uploads or workflow runs in over 25 days, stalling progress toward YPP at 4 subscribers.",
    "working": [
-    "Subscriber conversion rate is strong at 57.1 subscribers per 1,000 views based on initial view data."
+    "Strong initial subscriber conversion rate of 57.1 subscribers per 1,000 views",
+    "Specific physical-scam title framing ('The QR Code on a Package You Never Ordered' reached channel-best 30 views)"
    ],
    "not_working": [
-    "Publishing pipeline is completely stalled with 0 workflow runs and 0 uploads in the last 7 days.",
-    "Total view volume is severely constrained, with a median of 19 views across 4 videos (ranging from 2 to 30 views)."
+    "Complete disruption in upload schedule (0 publishes and 0 pipeline runs in the last 7 days; 618 hours since last video)",
+    "Low overall view counts (median 19 views across 4 videos), limiting watch-hour accumulation",
+    "Insufficient data pool (only 4 videos published) to establish statistically proven audience patterns"
    ],
-   "ypp_lever": "Restore automation reliability to resume consistent publishing, because zero video output halts all progress toward subscriber and watch-hour finish lines.",
+   "ypp_lever": "Resume consistent publishing by resolving the cloud studio workflow failure, because 0 uploads prevents collecting the watch hours and subscribers required before the 81-day deadline.",
    "inauthentic_risk": {
     "level": "medium",
-    "why": "Automated breakdown videos carry a risk of being flagged by YouTube reviewers for template or repetitive content unless each episode incorporates unique research, original script analysis, and visual variety."
+    "why": "Faceless, template-based scam breakdown videos risk being flagged as repetitive or reused content if they rely on generic synthetic voiceovers and standard stock footage without distinct visual research, case evidence, or original commentary."
    },
    "recommendations": [
     {
-     "change": "Diagnose and fix the cloud studio automation workflow to resume scheduled video production.",
-     "evidence": "0 automation runs and 0 uploads recorded in the past 7 days, with the most recent upload sitting at 546 hours ago.",
+     "change": "Investigate and restart the Scam Autopsy cloud studio pipeline to resume regular publishing.",
+     "evidence": "0 automation runs in the last 7 days and 618 hours elapsed since the last published video.",
      "target": "ops",
-     "risk": "medium",
+     "risk": "low",
      "auto_ok": false
     },
     {
-     "change": "Test prioritizing urgent consumer-alert topics (such as package QR codes) over generic job scams as a hypothesis to increase initial click-throughs.",
-     "evidence": "The QR code episode led recent views at 30 views versus 2 views for the work-from-home job video.",
+     "change": "Test dedicated end-screen callouts and pinned prompts to convert views to subscribers as video volume resumes.",
+     "evidence": "Hypothesis based on strong early conversion rate of 57.1 subs per 1,000 views across initial 4 videos.",
+     "target": "format",
+     "risk": "low",
+     "auto_ok": false
+    },
+    {
+     "change": "Prioritize tangible, everyday consumer scams (e.g., physical package QR codes or delivery alerts) in upcoming topic queues.",
+     "evidence": "Hypothesis: 'The QR Code on a Package You Never Ordered' achieved 30 views compared to 2 views for work-from-home job scams across a 4-video sample.",
      "target": "topics",
      "risk": "low",
      "auto_ok": false
     },
     {
-     "change": "Integrate a contextual subscribe prompt inside the first 30 seconds focused on helping viewers avoid scams.",
-     "evidence": "Channel sits at 4 total subscribers out of the 500 required for expanded YPP with 84 days left to the deadline.",
-     "target": "format",
+     "change": "Configure automated playlist creation and video-to-video end screens to drive session watch time for long-form YPP path.",
+     "evidence": "Long-form route requires 3,000 watch hours, while current channel median views sit at 19 views per video across 4 videos.",
+     "target": "code",
      "risk": "low",
      "auto_ok": false
     }
@@ -327,95 +207,10 @@
   },
   "universe": {
    "name": "Universe Receipts",
-   "summary": "13 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 1278 views, best 2218, worst 430",
-   "road": "123 subscribers (3.0 subscribers per 1,000 views); route shorts; 84 days to the deadline; 1.3 subscribers/day; expanded sub line ~293 days away; full sub line ~682 days away; Shorts-views and watch-hour totals unavailable (public numbers only)",
-   "health": "Universe Receipts maintains flawless automated publishing and consistent baseline view velocity (median 1,278 views), but its current subscriber conversion rate of 3.0 per 1,000 views is too slow to reach YPP before the 84-day deadline.",
-   "working": [
-    "Automation reliability is 100% stable with 0 failures across 39 Modal and watchdog runs.",
-    "Content consistently reaches viewers, with 12 of 15 recent Shorts clearing 1,000 views and a peak of 2,218 views."
-   ],
-   "not_working": [
-    "Subscriber growth of 1.3 per day puts the 500-sub finish line ~293 days away, far past the 84-day deadline.",
-    "Topic performance varies significantly, ranging from 430 views ('The Comet Panic of 1910') to 2,218 views ('The Star You Could See 7.5 Billion Light-Years Away')."
-   ],
-   "ypp_lever": "Incorporate explicit in-video spoken and visual subscribe prompts tied to recurring series branding, doubling subscriber conversion to hit the 500 subscriber line before the January 31 deadline.",
-   "inauthentic_risk": {
-    "level": "low",
-    "why": "Claims are backed by twin sources in the description, but automated video generation must ensure continuous visual variety so a YPP reviewer does not flag videos as template-based."
-   },
-   "recommendations": [
-    {
-     "change": "Add a dedicated sub-call prompt in the final 5 seconds of script templates and pin a contextual sub call in video comments.",
-     "evidence": "Subscriber conversion sits at 3.0 per 1,000 views (1.3 subs/day); reaching 500 subs requires 293 days at the current pace with only 84 days left.",
-     "target": "format",
-     "risk": "low",
-     "auto_ok": false
-    },
-    {
-     "change": "Shift topic weights toward deep-space scale anomalies and extreme cosmic objects while deprioritizing historical space panics.",
-     "evidence": "'The Star You Could See 7.5 Billion Light-Years Away' (2,218 views) and 'A Pixel in the Sunbeam' (2,211 views) earned 5x the views of 'The Comet Panic of 1910' (430 views).",
-     "target": "topics",
-     "risk": "low",
-     "auto_ok": false
-    },
-    {
-     "change": "Add clear visual series badges ('Scale Breaker', 'Space Got Weird') within the first 3 seconds of each video.",
-     "evidence": "Recognizable series identity boosts subscriber conversion on Shorts feeds by establishing clear content expectations.",
-     "target": "format",
-     "risk": "low",
-     "auto_ok": false
-    },
-    {
-     "change": "Optimize video title hooks to use curiosity gaps and specific numbers over general historical names.",
-     "evidence": "Titles featuring concrete numbers ('7.5 Billion Light-Years', '100 Milky Ways') average over 1,500 views compared to generic event titles.",
-     "target": "titles",
-     "risk": "low",
-     "auto_ok": false
-    }
-   ],
+   "summary": "15 uploads in the last 7 days (feed shows the latest 15); videos older than 24 h: median 1100 views, best 2522, worst 149",
+   "road": "127 subscribers (3.0 subscribers per 1,000 views); route shorts; 81 days to the deadline; 1.5 subscribers/day; expanded sub line ~249 days away; full sub line ~582 days away; Shorts-views and watch-hour totals unavailable (public numbers only)",
    "title_lint": []
   }
  },
- "focus": {
-  "summary": "Universe Receipts is closest to earning Expanded YPP with 123 subscribers and strong baseline reach of 1,278 median views, but a low subscriber conversion rate of 3.0 per 1,000 views stands in the way. Kyun Hua and Orbitwire follow closest behind, needing topic shifts and call-to-action prompts to reach 500 subscribers before the January 31, 2027 deadline.",
-  "focus": [
-   {
-    "channel": "Universe Receipts",
-    "why": "Highest subscriber count (123) and strong view performance (1,278 median views), but weak 3.0 subs per 1,000 views conversion rate limits growth toward the 500-sub line.",
-    "next_step": "Provide written suggestions for the channel owner to insert branded spoken and visual call-to-subscribe prompts into future video templates."
-   },
-   {
-    "channel": "Kyun Hua",
-    "why": "Second closest with 79 subscribers and the fastest current pace (4.0 subs/day), though low median views (53) drag down total velocity.",
-    "next_step": "Pivot automated topic selection strictly to Indian politics and defence to maximize 74-95% retention and increase view velocity."
-   },
-   {
-    "channel": "Orbitwire",
-    "why": "55 subscribers and consistent 446 median views, but stalled by a low subscriber conversion rate of 1.5 per 1,000 views.",
-    "next_step": "Implement standardized call-to-subscribe audio/captions in video generation and prioritize cyclone and obituary topics."
-   }
-  ],
-  "deprioritise": [
-   {
-    "channel": "Pangaea Nights",
-    "why": "36 subscribers and 0.8 subs/day pace put Expanded YPP over 500 days away without resumed long-form content."
-   },
-   {
-    "channel": "Atlas in Numbers",
-    "why": "31 subscribers with a low 1.2 subs per 1,000 views conversion rate puts the 500-subscriber target over 900 days away."
-   },
-   {
-    "channel": "Kahaani Chaos",
-    "why": "16 subscribers and zero automation runs in the last 7 days prevent reliable progress despite strong sub conversion."
-   },
-   {
-    "channel": "Mool Katha",
-    "why": "10 subscribers and a slow sub growth rate of 0.4/day place it over 1,000 days away from Expanded YPP."
-   },
-   {
-    "channel": "Scam Autopsy",
-    "why": "Dormant with 4 subscribers and zero uploads in the past 7 days, placing it furthest from YPP viability."
-   }
-  ]
- }
+ "focus": {}
 }
